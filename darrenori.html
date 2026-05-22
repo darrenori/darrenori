@@ -1,0 +1,1980 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>darrenori — Darren Ong</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230d1411'/><path d='M4 12 Q10 8 16 12 T28 12 M4 16 Q10 12 16 16 T28 16 M4 20 Q10 16 16 20 T28 20' stroke='%2370b594' fill='none' stroke-width='1.6' stroke-linecap='round'/></svg>" />
+
+<style>
+  :root{
+    --bg: oklch(0.13 0.018 155);
+    --bg-elev: oklch(0.17 0.022 155);
+    --ink: oklch(0.96 0.008 90);
+    --ink-2: oklch(0.78 0.012 90);
+    --ink-3: oklch(0.58 0.018 130);
+    --line: oklch(0.28 0.022 150);
+    --accent: oklch(0.78 0.13 152);
+    --warm: oklch(0.82 0.11 75);
+    --serif: "Instrument Serif", "Times New Roman", serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ background:var(--bg); color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+  body{ overflow-x:hidden; }
+  ::selection{ background:var(--accent); color:#0c1410; }
+
+  /* fixed canvas for the 3d scene */
+  #stage {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+  #stage canvas { display:block; width:100%; height:100%; }
+  /* a soft vignette over the canvas */
+  .vignette{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 50% 30%, transparent 0%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.75) 100%),
+      linear-gradient(180deg, rgba(0,0,0,0) 60%, var(--bg) 100%);
+  }
+
+  /* nav */
+  nav.top{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 18px 28px;
+    font-family: var(--mono); font-size: 11px; letter-spacing:.04em;
+    color: var(--ink-2);
+    mix-blend-mode: difference;
+  }
+  nav.top .brand{ display:flex; align-items:center; gap:10px; }
+  nav.top .brand svg{ width:22px; height:22px; }
+  nav.top .brand .word{ font-family: var(--serif); font-style:italic; font-size:18px; letter-spacing:-.01em; color:var(--ink); transform: translateY(1px);}
+  nav.top .links{ display:flex; gap:22px; }
+  nav.top .links a{ color:inherit; text-decoration:none; opacity:.7; transition:opacity .25s ease; }
+  nav.top .links a:hover{ opacity:1; }
+  nav.top .links a.icon{ display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; opacity:.7; transition:opacity .25s ease, transform .25s ease; }
+  nav.top .links a.icon:hover{ opacity:1; transform: translateY(-1px); }
+  nav.top .avail{ display:flex; align-items:center; gap:8px; }
+  nav.top .avail .dot{ width:6px; height:6px; border-radius:99px; background: var(--accent); box-shadow:0 0 12px var(--accent); animation:pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.6;transform:scale(.85)} 50%{opacity:1;transform:scale(1.05)} }
+
+  /* layout containers */
+  main{ position:relative; z-index:2; }
+  section{ position:relative; }
+
+  /* HERO --------------------------------------------------------- */
+  .hero{
+    height: 230vh; /* scroll runway for hero choreography */
+    position: relative;
+  }
+  .hero .sticky{
+    position: sticky; top:0;
+    height: 100vh;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center;
+  }
+  .hero .name{
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(72px, 18vw, 280px);
+    line-height: .9;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    text-shadow: 0 30px 60px rgba(0,0,0,0.35);
+    will-change: transform, opacity, letter-spacing;
+  }
+  .hero .name .dot{ color: var(--accent); display:inline-block; }
+  .hero .tag{
+    position:absolute; bottom: 12vh; left:50%; transform:translateX(-50%);
+    font-family: var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+    color: var(--ink-2);
+    display:flex; flex-direction:column; align-items:center; gap:14px;
+  }
+  .hero .tag .line{
+    width:1px; height:54px; background: linear-gradient(180deg, transparent, var(--ink-2));
+    animation: drift 2.4s ease-in-out infinite;
+  }
+  @keyframes drift{ 0%,100%{transform:scaleY(.6); transform-origin: top;} 50%{transform:scaleY(1)} }
+
+  .hero .meta{
+    position:absolute; left:28px; bottom:28px; font-family:var(--mono);
+    font-size:10px; letter-spacing:.16em; color: var(--ink-3); text-transform:uppercase;
+  }
+  .hero .meta-r{
+    position:absolute; right:28px; bottom:28px; font-family:var(--mono);
+    font-size:10px; letter-spacing:.16em; color: var(--ink-3); text-transform:uppercase;
+    text-align:right;
+  }
+  .hero .kanji{
+    position:absolute; top: 18vh; left: 50%; transform: translateX(-50%);
+    font-family: var(--serif); font-style: normal; font-size: 26px;
+    color: var(--accent); opacity: .85;
+    display:flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .hero .kanji small{ font-family: var(--mono); font-size: 9px; letter-spacing: .3em; color: var(--ink-3); text-transform: uppercase; }
+
+  /* WRAP — content as floating glass slabs over the persistent 3D scene */
+  .content {
+    position: relative;
+    background: transparent;
+    perspective: 2400px;
+    perspective-origin: 50% 50%;
+    z-index: 3;
+    padding-bottom: 60px;
+  }
+  .content > section.wrap{
+    background: rgba(13, 20, 17, 0.86);
+    border: 1px solid var(--line);
+    border-radius: 32px;
+    margin: 80px auto;
+    transform-style: preserve-3d;
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    backdrop-filter: blur(22px) saturate(140%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.06) inset,
+      0 -1px 0 rgba(0,0,0,0.4) inset,
+      0 8px 0 rgba(0,0,0,0.18),
+      0 30px 60px rgba(0,0,0,0.45),
+      0 80px 140px rgba(0,0,0,0.35),
+      0 0 0 1px rgba(255,255,255,0.02) inset;
+    will-change: transform;
+    transition: box-shadow .6s ease;
+  }
+  .content > section.wrap:first-child{ margin-top: 0; }
+
+  /* SECTION HEADER */
+  .sec-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding: 0 0 28px 0; margin-bottom: 48px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sec-head .num{ font-family: var(--mono); font-size:11px; color: var(--ink-3); letter-spacing:.16em; }
+  .sec-head .ttl{ font-family: var(--serif); font-style:italic; font-size: clamp(36px, 5.5vw, 76px); line-height:.95; letter-spacing:-.02em; }
+  .sec-head .sub{ font-family: var(--mono); font-size:11px; color: var(--ink-3); letter-spacing:.12em; text-transform:uppercase; }
+
+  .wrap{ max-width: 1280px; margin: 0 auto; padding: 0 36px; }
+
+  /* INTRO */
+  .intro{ padding: 18vh 36px 16vh 36px; }
+  .intro p.lead{
+    font-family: var(--serif); font-size: clamp(28px, 3.6vw, 56px); line-height: 1.18; letter-spacing:-.01em;
+    max-width: 18ch; color: var(--ink);
+  }
+  .intro p.lead em{ font-style:italic; color: var(--accent); }
+  .intro .row{ display:grid; grid-template-columns: 1.2fr 1fr; gap: 80px; align-items: end; }
+  .intro .col-r{ font-size: 15px; line-height: 1.65; color: var(--ink-2); max-width: 46ch; }
+  .intro .col-r p + p{ margin-top: 1em; }
+  .intro .col-r .pill{
+    display:inline-flex; align-items:center; gap:8px; padding: 6px 12px;
+    border:1px solid var(--line); border-radius: 99px; font-family: var(--mono); font-size: 10px; letter-spacing:.14em; text-transform:uppercase;
+    color: var(--ink-2); margin-bottom: 22px;
+  }
+  .intro .pill .dot{ width:6px; height:6px; border-radius:99px; background: var(--accent); box-shadow:0 0 10px var(--accent); }
+  .nori-note{
+    display:grid; grid-template-columns: 64px 1fr; gap: 18px; align-items: start;
+    margin-top: 28px; padding: 20px; border:1px solid var(--line); border-radius: 16px;
+    background: linear-gradient(140deg, rgba(95,168,133,.06), rgba(255,255,255,.01));
+  }
+  .nori-note .nk{ font-family: var(--serif); font-size: 44px; line-height: 1; color: var(--accent); }
+  .nori-note .nl{ font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;}
+  .nori-note p{ font-size: 13px; line-height: 1.55; color: var(--ink-2); font-style: italic; font-family: var(--serif); }
+
+  /* WORK */
+  .work{ padding: 12vh 36px 16vh 36px; }
+  .work .grid{ display:flex; flex-direction:column; gap: 18px; }
+  .card{
+    position:relative;
+    background: linear-gradient(165deg, oklch(0.20 0.025 150) 0%, var(--bg-elev) 60%);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 38px 40px;
+    display:grid; grid-template-columns: 220px 1fr auto; gap: 40px;
+    align-items:start;
+    transition: transform .5s cubic-bezier(.2,.7,.2,1), border-color .45s ease, background .45s ease, box-shadow .5s ease;
+    transform-style: preserve-3d;
+    overflow:hidden;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.05) inset,
+      0 -1px 0 rgba(0,0,0,.35) inset,
+      0 4px 0 rgba(0,0,0,.25),
+      0 16px 36px rgba(0,0,0,.4);
+  }
+  .card::after{
+    content:""; position:absolute; left:0; right:0; bottom:-8px; height: 8px; border-radius: 0 0 18px 18px;
+    background: linear-gradient(180deg, rgba(0,0,0,.5), transparent);
+    pointer-events:none; opacity:.6;
+  }
+  .card::before{
+    content:""; position:absolute; inset:0; border-radius:18px;
+    background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(126,206,160,.10), transparent 40%);
+    opacity:0; transition: opacity .35s ease;
+    pointer-events:none;
+  }
+  .card:hover{ border-color: oklch(0.42 0.05 150);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.08) inset,
+      0 -1px 0 rgba(0,0,0,.4) inset,
+      0 6px 0 rgba(0,0,0,.3),
+      0 30px 60px rgba(0,0,0,.55),
+      0 60px 120px rgba(0,0,0,.4),
+      0 0 60px rgba(95,168,133,.12);
+  }
+  .card:hover::before{ opacity:1; }
+  .card .when{ font-family: var(--mono); font-size: 11px; letter-spacing:.12em; color: var(--ink-3); text-transform:uppercase; padding-top:6px; }
+  .card .when .where{ display:block; color: var(--ink-2); margin-top:6px; font-size:11px; }
+  .card h3{ font-family: var(--serif); font-style: italic; font-size: clamp(28px, 2.8vw, 40px); line-height:1.05; letter-spacing:-.01em; font-weight: 400; color: var(--ink); margin-bottom: 14px; }
+  .card h3 small{ display:block; font-family: var(--sans); font-style: normal; font-size:13px; letter-spacing:.04em; color: var(--ink-2); margin-top:8px; text-transform:uppercase; font-weight: 500;}
+  .card p, .card li{ font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+  .card ul{ list-style:none; }
+  .card ul li{ padding-left: 18px; position:relative; margin-bottom: 8px; }
+  .card ul li::before{
+    content:""; position:absolute; left:0; top:11px; width:8px; height:1px; background: var(--accent);
+  }
+  .card .badge{
+    align-self:start; font-family: var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    padding:6px 10px; border:1px solid var(--line); border-radius: 8px; color: var(--ink-2); white-space:nowrap;
+  }
+  .card.featured{
+    background: linear-gradient(140deg, oklch(0.2 0.04 150) 0%, var(--bg-elev) 60%);
+    border-color: oklch(0.36 0.05 150);
+  }
+  .card.featured h3{ color: var(--ink); }
+
+  /* RESEARCH editorial */
+  .research{ padding: 12vh 36px 16vh 36px; }
+  .research .layout{ display:grid; grid-template-columns: 1fr 1.4fr; gap:80px; }
+  .research .quote{
+    font-family: var(--serif); font-style: italic; font-size: clamp(34px, 3.8vw, 64px); line-height: 1.12; letter-spacing:-.015em;
+  }
+  .research .quote .hi{ color: var(--accent); }
+  .research .quote .small{ display:block; font-family: var(--mono); font-style: normal; font-size: 11px; letter-spacing:.16em; text-transform:uppercase; color: var(--ink-3); margin-top: 20px;}
+  .research .body{ font-size: 15px; line-height: 1.7; color: var(--ink-2); }
+  .research .body p + p{ margin-top: 1.1em; }
+  .research .body h4{ font-family: var(--mono); font-size: 10px; letter-spacing:.16em; text-transform:uppercase; color: var(--ink); margin: 28px 0 10px; font-weight: 500;}
+  .research .stat-row{ display:flex; gap: 36px; margin-top: 30px; flex-wrap: wrap; }
+  .research .stat .n{ font-family: var(--serif); font-style: italic; font-size: 56px; line-height: 1; color: var(--accent); }
+  .research .stat .l{ font-family: var(--mono); font-size: 10px; letter-spacing:.14em; text-transform:uppercase; color: var(--ink-3); margin-top: 6px; }
+
+  /* AWARDS */
+  .awards{ padding: 12vh 36px 16vh 36px; }
+  .awards .grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:0; border-top:1px solid var(--line); }
+  .award{
+    padding: 28px 0; border-bottom:1px solid var(--line);
+    display:grid; grid-template-columns: 60px 1fr 220px; gap: 24px; align-items:start;
+    transition: background .35s ease;
+  }
+  .award h4{ transition: color .35s ease; }
+  .award:hover h4{ color: var(--accent); }
+  .award:nth-child(odd){ border-right: 1px solid var(--line); padding-right: 36px; }
+  .award:nth-child(even){ padding-left: 36px; }
+  .award .n{ font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing:.12em; padding-top: 4px;}
+  .award h4{ font-family: var(--serif); font-style: italic; font-size: 26px; line-height:1.15; letter-spacing:-.005em; font-weight:400; margin-bottom: 6px;}
+  .award .org{ font-family: var(--mono); font-size: 11px; letter-spacing:.12em; color: var(--ink-2); text-transform: uppercase; }
+  .award .desc{ font-size: 13px; color: var(--ink-2); line-height: 1.55; text-align:right; }
+
+  /* SKILLS + EDU split */
+  .duo{ padding: 12vh 36px 16vh 36px; display:grid; grid-template-columns: 1.3fr 1fr; gap: 80px; }
+  .skills h3, .edu h3{ font-family: var(--serif); font-style: italic; font-size: 36px; margin-bottom: 30px; font-weight: 400;}
+  .skills .group{ margin-bottom: 28px; }
+  .skills .group .lbl{ font-family: var(--mono); font-size: 10px; letter-spacing:.16em; text-transform:uppercase; color: var(--ink-3); margin-bottom: 12px;}
+  .skills .chips{ display:flex; flex-wrap:wrap; gap: 8px; }
+  .chip{
+    font-family: var(--mono); font-size: 12px; padding: 8px 12px;
+    border:1px solid var(--line); border-radius: 99px; color: var(--ink-2);
+    background: rgba(255,255,255,.012);
+    transition: background .25s, color .25s, transform .35s cubic-bezier(.2,.7,.2,1), border-color .25s;
+  }
+  .chip:hover{ background: var(--accent); color: #0c140f; border-color: var(--accent); transform: translateY(-2px); }
+
+  .edu .row{ padding: 24px 0; border-top: 1px solid var(--line); }
+  .edu .row:last-child{ border-bottom: 1px solid var(--line); }
+  .edu .row .when{ font-family: var(--mono); font-size: 10px; letter-spacing:.14em; color: var(--ink-3); text-transform: uppercase; margin-bottom: 8px; display:flex; justify-content:space-between;}
+  .edu .row h4{ font-family: var(--serif); font-style: italic; font-size: 28px; font-weight: 400; line-height:1.1; margin-bottom: 6px;}
+  .edu .row p{ font-size: 13.5px; color: var(--ink-2); line-height:1.55;}
+
+  /* GARDEN — interactive 3D mini-game */
+  .garden{ padding: 12vh 36px 16vh 36px; }
+  .garden .canvas-wrap{
+    position: relative; width: 100%; height: 62vh; min-height: 480px;
+    border-radius: 24px; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 100%, oklch(0.18 0.04 155) 0%, oklch(0.08 0.02 155) 60%, #050a08 100%);
+    cursor: crosshair;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.05) inset,
+      0 -1px 0 rgba(0,0,0,.45) inset,
+      0 30px 60px rgba(0,0,0,.4);
+    border: 1px solid var(--line);
+  }
+  .garden .canvas-wrap canvas{ display:block; width:100%; height:100%; z-index: 0; }
+  .garden .hud{
+    position: absolute; bottom: 22px; left: 22px; right: 22px; top: 22px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    pointer-events: none;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-2); letter-spacing: .12em; text-transform: uppercase;
+    z-index: 10;
+  }
+  .garden .hud-top, .garden .hud-bot{ display:flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;}
+  .garden .hud-top .count{
+    background: rgba(13,20,17,0.6);
+    padding: 10px 16px; border-radius: 99px; border: 1px solid var(--line);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    font-variant-numeric: tabular-nums;
+  }
+  .garden .hud-top .count .n{ color: var(--accent); font-weight: 500; }
+  .garden .hud-top .reset{
+    pointer-events: auto;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    background: rgba(13,20,17,0.6); color: var(--ink-2); border: 1px solid var(--line);
+    padding: 10px 16px; border-radius: 99px; cursor: pointer;
+    transition: color .25s, border-color .25s, transform .25s;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .garden .hud-top .reset:hover{ color: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+  .garden .hud-bot .msg{
+    background: rgba(13,20,17,0.55);
+    padding: 12px 18px; border-radius: 14px; border: 1px solid var(--line);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    color: var(--ink-2); font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+    text-transform: none;
+    transition: color .35s ease, border-color .35s ease;
+  }
+  .garden .hud-bot .msg.done{ color: var(--accent); border-color: var(--accent); }
+  .garden .hud-bot .msg .ja{ color: var(--accent); font-family: var(--serif); font-style: italic; margin-right: 8px;}
+  .garden .hud-bot .hint{
+    color: var(--ink-3); font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  }
+  .garden .celebration{
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-style: italic; font-size: clamp(40px, 6vw, 88px);
+    color: var(--ink); letter-spacing: -.02em; line-height: 1; text-shadow: 0 8px 40px rgba(0,0,0,.6);
+    opacity: 0; transform: scale(.92); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform 1.2s cubic-bezier(.2,.7,.2,1);
+  }
+  .garden .celebration.show{ opacity: 1; transform: scale(1); }
+  .garden .celebration .ja{ color: var(--accent); display:block; font-size: .5em; letter-spacing: .04em; margin-bottom: 8px; font-style: normal; font-family: var(--serif);}
+
+  /* CONTACT */
+  .contact{ padding: 18vh 36px 12vh 36px; text-align:left; position:relative;}
+  .contact .big{
+    font-family: var(--serif); font-style: italic; font-size: clamp(64px, 11vw, 180px);
+    line-height:.92; letter-spacing:-.035em; color: var(--ink);
+  }
+  .contact .big a{ color:inherit; text-decoration:none; position:relative; }
+  .contact .big a::after{
+    content:""; position:absolute; left:0; right:0; bottom: 8%; height: 3px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left; transition: transform .55s cubic-bezier(.2,.7,.2,1);
+  }
+  .contact .big a:hover::after{ transform: scaleX(1); }
+  .contact .links{ display:flex; gap: 36px; margin-top: 60px; flex-wrap:wrap;}
+  .contact .links a{
+    color: var(--ink-2); text-decoration:none; font-family: var(--mono); font-size: 12px; letter-spacing:.06em;
+    border-bottom: 1px solid var(--line); padding-bottom: 6px; transition: color .25s, border-color .25s;
+  }
+  .contact .links a:hover{ color: var(--accent); border-color: var(--accent); }
+
+  footer{
+    padding: 40px 36px 28px; display:flex; justify-content:space-between; align-items:center;
+    font-family: var(--mono); font-size: 10px; letter-spacing:.16em; color: var(--ink-3); text-transform:uppercase;
+    border-top:1px solid var(--line);
+  }
+
+  /* SCROLL SHOWCASE — Apple-style sticky 3D object that morphs through sections */
+  #showcase{
+    position: fixed; right: 28px; top: 50%; transform: translateY(-50%);
+    width: 260px; height: 320px; z-index: 60; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .8s cubic-bezier(.4,0,.2,1);
+  }
+  #showcase.on{ opacity: 1; }
+  #showcase .sc-canvas{ width: 240px; height: 240px; }
+  #showcase .sc-canvas canvas{ display:block; width:100%; height:100%; }
+  #showcase .sc-lbl{
+    margin-top: 14px; text-align: center;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .26em; text-transform: uppercase;
+    color: var(--ink-3); transition: opacity .4s ease;
+  }
+  #showcase .sc-lbl .num{ display:block; color: var(--accent); margin-bottom: 6px; opacity: .8; font-size: 9px; }
+  #showcase .sc-lbl .nm{ color: var(--ink-2); }
+  @media (max-width: 1180px){ #showcase{ display:none; } }
+
+  /* persistent 3D brand mark in the corner */
+  #cornerMark{
+    position: fixed; right: 22px; bottom: 22px; width: 84px; height: 84px;
+    z-index: 80; pointer-events: none;
+    filter: drop-shadow(0 8px 18px rgba(0,0,0,.55)) drop-shadow(0 0 16px oklch(0.78 0.13 152 / 0.25));
+  }
+  #cornerMark canvas{ display:block; width:100%; height:100%; }
+
+  /* reveal animation — 3D entrance */
+  .reveal{
+    opacity:0;
+    transform: translate3d(0, 50px, -180px) rotateX(10deg);
+    transition: opacity 1.2s cubic-bezier(.2,.7,.2,1), transform 1.2s cubic-bezier(.2,.7,.2,1);
+    transform-style: preserve-3d;
+  }
+  .reveal.in{ opacity:1; transform: translate3d(0,0,0) rotateX(0deg); }
+  .reveal-d1{ transition-delay: .08s; }
+  .reveal-d2{ transition-delay: .16s; }
+  .reveal-d3{ transition-delay: .24s; }
+
+  /* scroll progress */
+  #progress{
+    position:fixed; left:0; top:0; height:1px; background: var(--accent); width:0%; z-index: 100; box-shadow: 0 0 8px var(--accent);
+    transition: width .08s linear;
+  }
+
+  /* responsive */
+  @media (max-width: 880px){
+    .intro .row{ grid-template-columns: 1fr; gap: 40px; }
+    .research .layout{ grid-template-columns: 1fr; gap: 30px;}
+    .duo{ grid-template-columns: 1fr; gap: 50px;}
+    .awards .grid{ grid-template-columns: 1fr; }
+    .award:nth-child(odd){ border-right:none; padding-right:0;}
+    .award:nth-child(even){ padding-left:0;}
+    .card{ grid-template-columns: 1fr; gap: 16px; padding: 28px 24px; }
+    .card .badge{ justify-self:start; }
+    nav.top .links{ display:none; }
+    .wrap{ padding: 0 22px; }
+    .intro, .work, .research, .awards, .duo, .contact { padding-left: 22px; padding-right: 22px; }
+    .award .desc{ text-align:left;}
+    .award{ grid-template-columns: 30px 1fr; }
+    .award .desc{ grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<!-- 3D scene canvas -->
+<div id="stage"></div>
+<div class="vignette"></div>
+<div id="cornerMark" aria-hidden="true"></div>
+
+<!-- Apple-style scroll showcase: morphing 3D object tied to sections -->
+<div id="showcase" aria-hidden="true">
+  <div class="sc-canvas"></div>
+  <div class="sc-lbl"><span class="num">—</span><span class="nm">—</span></div>
+</div>
+
+<nav class="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <g stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round">
+        <path d="M3 11 Q9 7 16 11 T29 11" />
+        <path d="M3 16 Q9 12 16 16 T29 16" />
+        <path d="M3 21 Q9 17 16 21 T29 21" />
+      </g>
+    </svg>
+    <span class="word">darrenori</span>
+  </div>
+  <div class="links">
+    <a href="#work">Work</a>
+    <a href="#research">Research</a>
+    <a href="#awards">Awards</a>
+    <a href="#contact">Contact</a>
+    <a href="https://github.com/darrenori" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub" class="icon">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.87-1.54-3.87-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18A11 11 0 0 1 12 6.8c.98 0 1.97.13 2.9.39 2.21-1.5 3.18-1.18 3.18-1.18.63 1.59.23 2.77.11 3.06.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.41-5.26 5.69.41.36.78 1.07.78 2.16 0 1.56-.01 2.81-.01 3.19 0 .31.21.67.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+    </a>
+    <a href="https://linkedin.com/in/darrenori" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn" class="icon">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.44-2.13 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.59 0 4.26 2.37 4.26 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+    </a>
+  </div>
+  <div class="avail"><span class="dot"></span>Available · May–Aug 2026</div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="sticky">
+      <div class="kanji" aria-hidden="true">海苔<small>nori — dried seaweed</small></div>
+      <h1 class="name" id="heroName">darren<span class="dot">·</span>nori</h1>
+      <div class="tag">
+        <div>scroll</div>
+        <div class="line"></div>
+      </div>
+      <div class="meta">CS · NUS · 2025—28</div>
+      <div class="meta-r">Singapore<br/>darrennorii@gmail.com</div>
+    </div>
+  </section>
+
+  <div class="content">
+
+    <!-- INTRO -->
+    <section class="intro wrap" id="about">
+      <div class="row reveal">
+        <div>
+          <p class="lead">Networks, systems, <em>and a soft spot</em> for the layers in between.</p>
+        </div>
+        <div class="col-r">
+          <span class="pill"><span class="dot"></span>Open to internships · May–Aug 2026</span>
+          <p>I’m Darren Ong — undergrad in Computer Science at NUS, formerly a network engineer and competitor at WorldSkills, intern researcher at DSO National Laboratories, and IEEE-published on homomorphic encryption.</p>
+          <p>I like the unglamorous bits: routing tables that hum, honeypots that listen, fully-homomorphic ciphertexts that still let you compute. Also: bringing them up cleanly.</p>
+          <div class="nori-note" data-tilt-soft>
+            <div class="nk">海苔</div>
+            <div class="nb">
+              <div class="nl">nori · /ˈnɔː.ri/</div>
+              <p>edible seaweed pressed into thin, dark sheets. layered, flexible, and quietly holding everything else together. the “nori” in darrenori.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORK -->
+    <section class="work wrap" id="work">
+      <div class="sec-head reveal">
+        <div>
+          <div class="num">01 — Selected work</div>
+          <div class="ttl">Where I’ve been.</div>
+        </div>
+        <div class="sub">3 roles · 2020 — 2023</div>
+      </div>
+
+      <div class="grid">
+
+        <article class="card featured reveal" data-tilt data-tilt-strong>
+          <div class="when">
+            2022 — 2023
+            <span class="where">DSO National Laboratories</span>
+          </div>
+          <div>
+            <h3>Cybersecurity Research.
+              <small>Intern Researcher · Cyber R&amp;D</small>
+            </h3>
+            <ul>
+              <li>Designed and deployed a research network environment from scratch — automated provisioning, full telemetry pipeline, and security monitoring at scale.</li>
+              <li>Researched vulnerabilities in a widely-deployed operating system.</li>
+              <li>Built and operated hybrid honeypots.</li>
+            </ul>
+          </div>
+          <div class="badge">Featured</div>
+        </article>
+
+        <article class="card reveal" data-tilt>
+          <div class="when">
+            2020 — 2023
+            <span class="where">WorldSkills</span>
+          </div>
+          <div>
+            <h3>Designing enterprise networks under a stopwatch.
+              <small>Network Engineer · ITNSA competitor</small>
+            </h3>
+            <ul>
+              <li>Competed and won National- and ASEAN-level WorldSkills competitions in IT Networks &amp; Systems Administration — integrating Cisco, Windows AD, and Debian under time-trial conditions.</li>
+              <li>Configured RAID/LVM, load balancing, VPN/PKI, AD domains, logging, routing, and web services (IIS / Nginx / Apache) — to LPIC-2, MCSA and CCNA standards.</li>
+              <li>On-site networking and sysadmin in real customer environments throughout training.</li>
+            </ul>
+          </div>
+          <div class="badge">Gold Medallist</div>
+        </article>
+
+        <article class="card reveal" data-tilt>
+          <div class="when">
+            2020 — 2023
+            <span class="where">AiSP (TP Chapter)</span>
+          </div>
+          <div>
+            <h3>President of a 50-person committee.
+              <small>Community · Outreach · Events</small>
+            </h3>
+            <ul>
+              <li>Ran the Association of Information Security Professionals (TP) — 10 main + 40 sub-committee members organising Youth Cyber Exploration Camp and student exchanges.</li>
+              <li>Launched the Surf Safe Campaign with non-profits and schools, reaching <strong>&gt;14,000</strong> secondary students.</li>
+              <li>Head Organiser of <em>Interpoly: Lag and Crash</em> — a CTF with 350+ tertiary students, GoH Dr Janil Puthucheary.</li>
+            </ul>
+          </div>
+          <div class="badge">President</div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- RESEARCH -->
+    <section class="research wrap" id="research">
+      <div class="sec-head reveal">
+        <div>
+          <div class="num">02 — Research</div>
+          <div class="ttl">Numbers, when they matter.</div>
+        </div>
+        <div class="sub">IEEE · GDC · Google Cloud</div>
+      </div>
+
+      <div class="layout">
+        <div class="reveal">
+          <p class="quote">
+            Fully-homomorphic encryption, <span class="hi">95% faster</span> on a Jetson Nano.
+            <span class="small">IEEE — ieeexplore 10150632</span>
+          </p>
+          <div class="stat-row">
+            <div class="stat"><div class="n">95%</div><div class="l">Latency reduction</div></div>
+            <div class="stat"><div class="n">CUDA</div><div class="l">Parallelised on Jetson</div></div>
+            <div class="stat"><div class="n">IEEE</div><div class="l">Published</div></div>
+          </div>
+        </div>
+        <div class="body reveal reveal-d1">
+          <h4>Fully Homomorphic Encryption on CUDA</h4>
+          <p>Published with IEEE — a study of how FHE behaves when you throw NVIDIA’s CUDA parallelism at it. Implemented and benchmarked on NVIDIA Jetson Nano devices, comparing public/private key generation, security-bits, default generated key size, and transmission latency. Achieved up to a 95% reduction in computation latency.</p>
+          <h4>Google Air-Gapped Distributed Cloud</h4>
+          <p>Researched Google’s Air-Gapped GDC, focused on sovereign-cloud requirements, security isolation, AI governance and data-residency constraints, and the trade-offs between connected and air-gapped deployments.</p>
+          <p>Conducted on-site interviews with <em>Andy Lee</em> (Head, Google Cloud Public Sector) and <em>Shang Jiunn Chuah</em> (Customer Engineer, Google Cloud).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AWARDS -->
+    <section class="awards wrap" id="awards">
+      <div class="sec-head reveal">
+        <div>
+          <div class="num">03 — Recognition</div>
+          <div class="ttl">A few things on the shelf.</div>
+        </div>
+        <div class="sub">Worldskills · MOE · SCS · Cisco · AiSP</div>
+      </div>
+
+      <div class="grid">
+        <div class="award reveal">
+          <div class="n">i.</div>
+          <div>
+            <h4>The Lee Kuan Yew Award for Mathematics &amp; Science</h4>
+            <div class="org">Ministry of Education</div>
+          </div>
+          <div class="desc">Awarded to the top computer-science graduates in each polytechnic.</div>
+        </div>
+        <div class="award reveal">
+          <div class="n">ii.</div>
+          <div>
+            <h4>WorldSkills Gold Medallist</h4>
+            <div class="org">WorldSkills Singapore · ITNSA</div>
+          </div>
+          <div class="desc">National skills competition — top performer represents SG internationally.</div>
+        </div>
+        <div class="award reveal">
+          <div class="n">iii.</div>
+          <div>
+            <h4>Future Leader in Technology</h4>
+            <div class="org">Singapore Computer Society</div>
+          </div>
+          <div class="desc">Recognises outstanding contributions to the industry by under-30s in school.</div>
+        </div>
+        <div class="award reveal">
+          <div class="n">iv.</div>
+          <div>
+            <h4>APJC NetAcad Riders — 2<sup>nd</sup> place</h4>
+            <div class="org">Cisco · Asia-Pacific Japan China</div>
+          </div>
+          <div class="desc">Regional interactive networking-skills contest spanning APJC.</div>
+        </div>
+        <div class="award reveal">
+          <div class="n">v.</div>
+          <div>
+            <h4>Gold Medallist &amp; Valedictorian</h4>
+            <div class="org">Temasek Polytechnic · CDF</div>
+          </div>
+          <div class="desc">Top student of the Cybersecurity &amp; Digital Forensics cohort.</div>
+        </div>
+        <div class="award reveal">
+          <div class="n">vi.</div>
+          <div>
+            <h4>SVRP Gold &amp; Valedictorian</h4>
+            <div class="org">AiSP · CSA-backed</div>
+          </div>
+          <div class="desc">Student volunteer recognition for sustained service in cybersecurity.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SKILLS + EDU -->
+    <section class="duo wrap" id="skills">
+      <div class="skills reveal">
+        <div class="num" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.16em;margin-bottom:10px;">04 — Toolkit</div>
+        <h3>The stack I reach for.</h3>
+
+        <div class="group">
+          <div class="lbl">Networking &amp; infra</div>
+          <div class="chips">
+            <span class="chip">Cisco · CCNA</span><span class="chip">Cisco Modelling Labs</span><span class="chip">Windows Server / AD</span><span class="chip">Debian (most fluent)</span><span class="chip">VMware</span><span class="chip">Hyper-V</span><span class="chip">Vagrant</span><span class="chip">Ansible</span>
+          </div>
+        </div>
+        <div class="group">
+          <div class="lbl">Security</div>
+          <div class="chips">
+            <span class="chip">Blue Team</span><span class="chip">WinDbg · RE</span><span class="chip">Elastic Stack</span><span class="chip">Splunk</span><span class="chip">PKI / VPN</span><span class="chip">Palo Alto</span>
+          </div>
+        </div>
+        <div class="group">
+          <div class="lbl">Languages</div>
+          <div class="chips">
+            <span class="chip">Java</span><span class="chip">C</span><span class="chip">JavaScript</span><span class="chip">Bash</span><span class="chip">PowerShell</span>
+          </div>
+        </div>
+        <div class="group">
+          <div class="lbl">Spoken / written</div>
+          <div class="chips">
+            <span class="chip">English</span><span class="chip">Chinese</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="edu reveal reveal-d1">
+        <div class="num" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.16em;margin-bottom:10px;">05 — Education</div>
+        <h3>School &amp; certs.</h3>
+        <div class="row">
+          <div class="when"><span>National University of Singapore</span><span>Aug 2025 — Aug 2028</span></div>
+          <h4>BSc, Computer Science</h4>
+          <p>Undergraduate.</p>
+        </div>
+        <div class="row">
+          <div class="when"><span>Temasek Polytechnic</span><span>Apr 2020 — Apr 2023</span></div>
+          <h4>Diploma (with Merit), Cybersecurity &amp; Digital Forensics</h4>
+          <p>Valedictorian.</p>
+        </div>
+        <div class="row">
+          <div class="when"><span>Press &amp; media</span><span>2022 — 2023</span></div>
+          <h4>Featured</h4>
+          <p>Channel News Asia · Lianhe Zaobao · Singapore Computer Society (Future Leaders in Tech 2023).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- GARDEN — interactive 3D mini-game -->
+    <section class="garden wrap" id="garden">
+      <div class="sec-head reveal">
+        <div>
+          <div class="num">— Interlude</div>
+          <div class="ttl">Tend the garden.</div>
+        </div>
+        <div class="sub">Click to plant · Move to current</div>
+      </div>
+      <div class="canvas-wrap reveal" id="gardenCanvas">
+        <div class="hud">
+          <div class="hud-top">
+            <div class="count"><span class="n" id="gardenCount">0</span> &nbsp;/&nbsp; 12 sheets planted</div>
+            <button class="reset" id="gardenReset">Reset</button>
+          </div>
+          <div class="hud-bot">
+            <div class="msg" id="gardenMsg">click anywhere on the seabed to plant nori.</div>
+            <div class="hint">move cursor for current →</div>
+          </div>
+        </div>
+        <div class="celebration" id="gardenCeleb">
+          <div><span class="ja">森ができた</span>your forest is grown.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="contact wrap" id="contact">
+      <div class="sec-head reveal" style="border-color: var(--line);">
+        <div>
+          <div class="num">06 — Get in touch</div>
+        </div>
+        <div class="sub">May — Aug 2026</div>
+      </div>
+      <div class="big reveal">
+        Let’s build<br/>something <em><a href="mailto:darrennorii@gmail.com">together.</a></em>
+      </div>
+      <div class="links reveal reveal-d1">
+        <a href="mailto:darrennorii@gmail.com">darrennorii@gmail.com</a>
+        <a href="https://github.com/darrenori" target="_blank" rel="noopener">github.com/darrenori</a>
+        <a href="https://linkedin.com/in/darrenori" target="_blank" rel="noopener">linkedin.com/in/darrenori</a>
+        <a href="https://ieeexplore.ieee.org/document/10150632" target="_blank" rel="noopener">IEEE paper</a>
+        <a href="https://www.scs.org.sg/future-leaders-in-tech-2023" target="_blank" rel="noopener">SCS feature</a>
+      </div>
+    </section>
+
+    <footer>
+      <div>© 2026 — darren ong</div>
+      <div>nori · /ˈnɔː.ri/ · 海苔</div>
+    </footer>
+
+  </div>
+</main>
+
+<!-- Three.js -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+// =============================================================
+// 3D Hero — translucent "nori" sheets drifting in deep space
+// =============================================================
+(() => {
+  const mount = document.getElementById('stage');
+  if (!window.THREE) { console.error('Three.js failed to load'); return; }
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0a1310, 0.08);
+
+  const camera = new THREE.PerspectiveCamera(38, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0, 9);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+  mount.appendChild(renderer.domElement);
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0x4a7a64, 0.55);
+  scene.add(ambient);
+  const key = new THREE.DirectionalLight(0xc6f0d8, 1.4);
+  key.position.set(2, 4, 5);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0x9eb6ff, 0.6);
+  rim.position.set(-4, -2, -3);
+  scene.add(rim);
+  const point = new THREE.PointLight(0xc7f0d4, 2.2, 18, 2);
+  point.position.set(0, 1.4, 4.5);
+  scene.add(point);
+  const point2 = new THREE.PointLight(0xa9d4ff, 0.9, 14, 2);
+  point2.position.set(-3, -2, 3);
+  scene.add(point2);
+
+  // -------------- Wavy nori sheet shader --------------
+  const noriVert = `
+    uniform float uTime;
+    uniform float uAmp;
+    uniform float uFreq;
+    uniform float uSeed;
+    varying vec2 vUv;
+    varying float vWave;
+    void main(){
+      vUv = uv;
+      vec3 p = position;
+      float t = uTime * 0.6 + uSeed;
+      float w =
+        sin(p.x * uFreq + t) * 0.5 +
+        sin(p.y * uFreq * 0.7 + t * 1.3) * 0.5 +
+        sin((p.x + p.y) * uFreq * 0.4 - t * 0.7) * 0.3;
+      p.z += w * uAmp;
+      vWave = w;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }
+  `;
+  const noriFrag = `
+    precision highp float;
+    uniform vec3 uColor;
+    uniform vec3 uHighlight;
+    uniform float uOpacity;
+    varying vec2 vUv;
+    varying float vWave;
+    void main(){
+      // grain
+      float grain = fract(sin(dot(vUv * 1024.0, vec2(12.9898, 78.233))) * 43758.5453);
+      grain = (grain - 0.5) * 0.05;
+      // edge falloff (translucent sheet)
+      float edge = smoothstep(0.0, 0.18, vUv.x) * smoothstep(0.0, 0.18, 1.0 - vUv.x)
+                 * smoothstep(0.0, 0.12, vUv.y) * smoothstep(0.0, 0.12, 1.0 - vUv.y);
+      // wave-driven specular hint
+      float hi = smoothstep(0.2, 1.0, vWave + 0.4);
+      vec3 col = mix(uColor, uHighlight, hi * 0.6);
+      col += grain;
+      gl_FragColor = vec4(col, uOpacity * edge);
+    }
+  `;
+
+  const sheets = [];
+  function makeSheet(opts){
+    const geo = new THREE.PlaneGeometry(opts.w, opts.h, 60, 60);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uAmp: { value: opts.amp },
+        uFreq: { value: opts.freq },
+        uSeed: { value: opts.seed },
+        uColor: { value: new THREE.Color(opts.color) },
+        uHighlight: { value: new THREE.Color(opts.highlight) },
+        uOpacity: { value: opts.opacity }
+      },
+      vertexShader: noriVert,
+      fragmentShader: noriFrag,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.NormalBlending
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(opts.x, opts.y, opts.z);
+    m.rotation.set(opts.rx, opts.ry, opts.rz);
+    m.userData = { baseY: opts.y, baseX: opts.x, baseZ: opts.z, baseRx: opts.rx, baseRy: opts.ry, drift: opts.drift, depth: opts.z };
+    scene.add(m);
+    sheets.push(m);
+    return m;
+  }
+
+  // palette
+  const dark   = 0x14302a;
+  const mid    = 0x1c4438;
+  const accent = 0x5fa885;
+  const hi     = 0x9dd9b6;
+  const ink    = 0x07140f;
+
+  // Build a constellation of sheets at varying depths
+  const layout = [
+    // huge background sheet (deep)
+    { w: 14, h: 10, x: -0.5, y:  0.2, z:-8, rx: 0.2, ry: 0.3, rz: 0.05, amp: 0.5, freq: 0.7, seed: 1.1, color: dark, highlight: accent, opacity: 0.42, drift: .25 },
+    // mid layers
+    { w: 7,  h: 5,  x: -3.6, y:  1.2, z:-3, rx: 0.35, ry: -0.4, rz:-0.1, amp: 0.42, freq: 1.0, seed: 2.3, color: mid, highlight: hi, opacity: 0.6, drift: .5 },
+    { w: 6,  h: 4,  x:  3.8, y: -0.8, z:-2, rx:-0.25, ry: 0.5, rz: 0.08, amp: 0.4, freq: 1.1, seed: 3.7, color: mid, highlight: hi, opacity: 0.6, drift: .55 },
+    { w: 5,  h: 3.5, x: -1.5, y: -2.0, z: 0, rx: 0.5, ry: -0.2, rz: 0.18, amp: 0.36, freq: 1.4, seed: 0.4, color: 0x1f5040, highlight: hi, opacity: 0.55, drift: .8 },
+    { w: 4.5,h: 3,  x:  2.2, y:  2.0, z: 1, rx:-0.4, ry: 0.3, rz:-0.15, amp: 0.34, freq: 1.6, seed: 5.1, color: 0x1f5040, highlight: hi, opacity: 0.55, drift: .9 },
+    // closer foreground (smaller, more translucent)
+    { w: 3,  h: 2.2, x: -2.6, y:  2.6, z: 2.6, rx: 0.6, ry: 0.7, rz: 0.25, amp: 0.3, freq: 1.8, seed: 4.2, color: 0x2a6a55, highlight: 0xb6e8c8, opacity: 0.5, drift: 1.1 },
+    { w: 3.5,h: 2.5, x:  2.8, y: -2.4, z: 2.8, rx:-0.55, ry:-0.5, rz:-0.22, amp: 0.32, freq: 1.7, seed: 6.0, color: 0x2a6a55, highlight: 0xb6e8c8, opacity: 0.5, drift: 1.2 },
+    { w: 2.4,h: 1.8, x:  0.0, y:  3.2, z: 3.5, rx: 0.7, ry: 0.0, rz: 0.0, amp: 0.28, freq: 2.1, seed: 7.5, color: 0x368a6a, highlight: 0xc9efd8, opacity: 0.4, drift: 1.4 },
+    { w: 2.2,h: 1.6, x:  0.3, y: -3.4, z: 4.0, rx:-0.75, ry: 0.1, rz: 0.1, amp: 0.28, freq: 2.3, seed: 8.1, color: 0x368a6a, highlight: 0xc9efd8, opacity: 0.4, drift: 1.55 },
+    // a small bright "accent" sheet drifting close
+    { w: 1.6,h: 1.2, x: -3.8, y: -1.4, z: 4.6, rx: 0.4, ry: 0.6, rz: -0.3, amp: 0.22, freq: 2.6, seed: 9.4, color: 0x4ca884, highlight: 0xdfffe9, opacity: 0.55, drift: 1.7 },
+  ];
+  layout.forEach(makeSheet);
+
+  // ============================================================
+  // 3D SEAWEED — actual kelp leaves with multi-axis bend, twist,
+  // anchored at the bottom and swaying like underwater plants
+  // ============================================================
+  const kelpVert = `
+    uniform float uTime;
+    uniform float uSeed;
+    uniform float uH;
+    varying vec2 vUv;
+    varying float vBend;
+    void main(){
+      vUv = uv;
+      vec3 p = position;
+      // h: 0 at bottom of leaf, 1 at top
+      float h = clamp((p.y / uH) + 0.5, 0.0, 1.0);
+      float t = uTime * 0.55 + uSeed;
+      // anchored at base — sway grows quadratically toward tip
+      float bendCurve = pow(h, 1.5);
+      float swayX = sin(t + h * 2.3) * 0.95 * bendCurve;
+      float swayZ = cos(t * 0.75 + h * 1.7) * 0.7 * bendCurve;
+      // surface ripple
+      float ripple = sin(p.y * 5.0 + t * 1.6) * 0.05 * bendCurve;
+      // twist cross-section around Y axis
+      float twistAngle = sin(t * 0.45 + uSeed) * 0.85 * bendCurve;
+      float ca = cos(twistAngle); float sa = sin(twistAngle);
+      vec3 q = vec3(p.x * ca - p.z * sa, p.y, p.x * sa + p.z * ca);
+      q.x += swayX + ripple;
+      q.z += swayZ;
+      vBend = swayX;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(q, 1.0);
+    }
+  `;
+  const kelpFrag = `
+    precision highp float;
+    uniform vec3 uColor;
+    uniform vec3 uHi;
+    uniform float uOpacity;
+    varying vec2 vUv;
+    varying float vBend;
+    void main(){
+      float widthAtY = mix(0.7, 1.0, smoothstep(0.0, 0.25, vUv.y)) * (1.0 - smoothstep(0.78, 1.0, vUv.y));
+      float xCenter = 0.5;
+      float xDist = abs(vUv.x - xCenter);
+      float edge = 1.0 - smoothstep(widthAtY * 0.5 - 0.05, widthAtY * 0.5, xDist);
+      if (edge < 0.02) discard;
+      // shading by bend — dark seaweed with subtle highlight on bent side
+      float bendN = sin(vBend * 1.4) * 0.5 + 0.5;
+      vec3 col = mix(uColor, uHi, bendN * 0.28);
+      // central vein (midrib) — subtle, slightly brighter
+      float rib = 1.0 - smoothstep(0.0, 0.02, xDist);
+      col = mix(col, uHi * 0.7, rib * 0.4);
+      // subtle horizontal striations (nori texture)
+      col *= 1.0 - 0.1 * abs(sin(vUv.y * 60.0));
+      // very faint rim near edges (so silhouette reads)
+      float rim = smoothstep(0.0, 0.05, widthAtY * 0.5 - xDist);
+      col += uHi * (1.0 - rim) * 0.12;
+      gl_FragColor = vec4(col, uOpacity * edge);
+    }
+  `;
+
+  const kelps = [];
+  function makeKelp(opts){
+    const geo = new THREE.PlaneGeometry(opts.w, opts.h, 14, 60);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uSeed: { value: opts.seed },
+        uH:    { value: opts.h },
+        uColor:{ value: new THREE.Color(opts.color) },
+        uHi:   { value: new THREE.Color(opts.hi) },
+        uOpacity:{ value: opts.opacity }
+      },
+      vertexShader: kelpVert,
+      fragmentShader: kelpFrag,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(opts.x, opts.y, opts.z);
+    m.rotation.y = opts.ry || 0;
+    scene.add(m);
+    kelps.push(m);
+    return m;
+  }
+
+  // a forest of kelp — dark nori palette, like real seaweed
+  const kelpLayout = [
+    // FOREGROUND — large, deep nori colors
+    { w: 1.8, h: 8.5, x: -4.8, y: -0.8, z:  1.5, ry:  0.25, seed: 1.2, color: 0x0c2018, hi: 0x4a8a70, opacity: 0.95 },
+    { w: 1.6, h: 7.8, x:  4.4, y: -1.0, z:  1.2, ry: -0.35, seed: 3.4, color: 0x0d2620, hi: 0x4c8a72, opacity: 0.93 },
+    { w: 1.3, h: 6.2, x: -2.0, y: -1.4, z:  2.6, ry:  0.6,  seed: 5.6, color: 0x123028, hi: 0x5fa885, opacity: 0.90 },
+    { w: 1.2, h: 5.6, x:  1.4, y: -1.6, z:  2.8, ry: -0.5,  seed: 2.7, color: 0x102e25, hi: 0x559a7a, opacity: 0.88 },
+    // MIDGROUND
+    { w: 1.0, h: 5.0, x: -6.4, y: -1.6, z:  0.2, ry:  0.0,  seed: 4.9, color: 0x0a1f18, hi: 0x3d7a62, opacity: 0.82 },
+    { w: 1.1, h: 5.4, x:  6.0, y: -1.4, z:  0.0, ry: -0.2,  seed: 6.1, color: 0x0a1f18, hi: 0x3d7a62, opacity: 0.82 },
+    { w: 0.9, h: 4.4, x: -3.4, y: -2.0, z: -0.4, ry:  0.8,  seed: 7.3, color: 0x0d251e, hi: 0x437a64, opacity: 0.76 },
+    { w: 0.9, h: 4.6, x:  3.0, y: -1.8, z: -0.6, ry: -0.7,  seed: 8.0, color: 0x0d251e, hi: 0x437a64, opacity: 0.76 },
+    // DEEP BACKGROUND — silhouettes
+    { w: 1.5, h: 7.2, x: -5.6, y: -1.0, z: -2.6, ry:  0.4,  seed: 9.2, color: 0x07140f, hi: 0x2e604c, opacity: 0.6 },
+    { w: 1.6, h: 7.5, x:  5.2, y: -1.0, z: -2.8, ry: -0.3,  seed: 10.5,color: 0x07140f, hi: 0x2e604c, opacity: 0.6 },
+    { w: 1.0, h: 5.0, x: -1.2, y: -1.6, z: -1.8, ry:  0.0,  seed: 11.4,color: 0x0a1c16, hi: 0x356b55, opacity: 0.65 },
+    { w: 1.0, h: 5.2, x:  0.8, y: -1.6, z: -1.6, ry:  0.0,  seed: 12.8,color: 0x0a1c16, hi: 0x356b55, opacity: 0.65 },
+  ];
+  kelpLayout.forEach(makeKelp);
+
+  // ============================================================
+  // 3D SOLIDS — just a couple of small accent shapes (seaweed is the star)
+  // ============================================================
+  const solids = [];
+  function addSolid(geo, color, x, y, z, scale, opts={}){
+    const mat = new THREE.MeshStandardMaterial({
+      color, metalness: opts.metal ?? 0.35, roughness: opts.rough ?? 0.32,
+      emissive: opts.emissive ?? 0x08180f, emissiveIntensity: opts.ei ?? 0.45,
+      flatShading: !!opts.flat
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.scale.setScalar(scale);
+    m.userData = { spinX: (Math.random()*.5+.15) * (Math.random()<.5?1:-1), spinY: (Math.random()*.6+.2) * (Math.random()<.5?1:-1), bob: Math.random()*Math.PI*2, baseY: y };
+    scene.add(m);
+    solids.push(m);
+    return m;
+  }
+
+  const icoGeo = new THREE.IcosahedronGeometry(0.55, 0);
+  const torGeo = new THREE.TorusGeometry(0.32, 0.1, 16, 64);
+
+  // tiny accents only — like floating air bubbles / underwater debris
+  addSolid(icoGeo, 0x6dc09c,  4.6,  2.6,  2.5, 0.35, { flat: true, metal: 0.5, emissive: 0x2a6651, ei: 0.7 });
+  addSolid(torGeo, 0x9dd9b6, -4.2,  2.8,  2.0, 0.5,  { metal: 0.6, rough: 0.25, emissive: 0x2a6651, ei: 0.5 });
+  addSolid(icoGeo, 0xb6e8c8,  1.8,  3.4,  3.2, 0.25, { flat: true, metal: 0.4, emissive: 0x4ca884, ei: 0.8 });
+
+  // ============================================================
+  // CENTRAL FEATURE — nori-tinted torus knot (smaller, recedes faster)
+  // ============================================================
+  const knotGeo = new THREE.TorusKnotGeometry(1.1, 0.28, 220, 32, 2, 3);
+  const knotMat = new THREE.MeshStandardMaterial({
+    color: 0x1f5040, metalness: 0.55, roughness: 0.3,
+    emissive: 0x0a2419, emissiveIntensity: 0.35
+  });
+  const knot = new THREE.Mesh(knotGeo, knotMat);
+  knot.position.set(0, 0, -2);
+  scene.add(knot);
+
+  // Subtle floating particle dust
+  const dustGeo = new THREE.BufferGeometry();
+  const N = 220;
+  const dpos = new Float32Array(N*3);
+  for (let i=0;i<N;i++){
+    dpos[i*3+0] = (Math.random()-0.5) * 22;
+    dpos[i*3+1] = (Math.random()-0.5) * 14;
+    dpos[i*3+2] = (Math.random()*8) - 2;
+  }
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3));
+  const dustMat = new THREE.PointsMaterial({
+    color: 0xa8e5c1, size: 0.022, transparent:true, opacity: 0.55, depthWrite:false, sizeAttenuation:true
+  });
+  const dust = new THREE.Points(dustGeo, dustMat);
+  scene.add(dust);
+
+  // Pointer parallax
+  let pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+  window.addEventListener('pointermove', (e) => {
+    pointer.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+    pointer.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // Resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Scroll progress (drives hero choreography)
+  let scrollY = 0;
+  let docH = 1;
+  let heroH = window.innerHeight * 2.3; // matches .hero height
+  function recalc(){
+    docH = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    heroH = (document.getElementById('hero')?.offsetHeight || window.innerHeight*2.3);
+  }
+  window.addEventListener('resize', recalc);
+  setTimeout(recalc, 100);
+
+  const heroName = document.getElementById('heroName');
+  const progressBar = document.getElementById('progress');
+
+  window.addEventListener('scroll', () => {
+    scrollY = window.scrollY || window.pageYOffset;
+    // progress
+    progressBar.style.width = Math.min(100, (scrollY / docH) * 100).toFixed(2) + '%';
+
+    // hero choreography (0..1 through hero scroll)
+    const t = Math.min(1, Math.max(0, scrollY / heroH));
+    // name scales down + drifts up + spaces letters
+    const ease = (x) => 1 - Math.pow(1 - x, 2.4);
+    const e = ease(t);
+    const scale = 1 - 0.35 * e;
+    const ty = -160 * e;
+    const sp = -0.04 + 0.06 * e;
+    const op = 1 - Math.min(1, t * 1.3);
+    if (heroName){
+      heroName.style.transform = `translateY(${ty}px) scale(${scale})`;
+      heroName.style.letterSpacing = sp + 'em';
+      heroName.style.opacity = op.toFixed(3);
+    }
+  }, { passive: true });
+
+  // pause main scene when the garden mini-game is in view
+  let renderEnabled = true;
+  const gardenSec = document.getElementById('garden');
+  if (gardenSec){
+    const gIo = new IntersectionObserver(es => {
+      es.forEach(e => { renderEnabled = !e.isIntersecting; });
+    }, { threshold: 0.3 });
+    gIo.observe(gardenSec);
+  }
+
+  // animation loop
+  const clock = new THREE.Clock();
+  function loop(){
+    const dt = clock.getDelta();
+    const tm = clock.getElapsedTime();
+
+    // smooth pointer
+    pointer.x += (pointer.tx - pointer.x) * 0.05;
+    pointer.y += (pointer.ty - pointer.y) * 0.05;
+
+    // scroll-driven progress for sheets
+    const tHero = Math.min(1, Math.max(0, scrollY / heroH));
+    const eHero = 1 - Math.pow(1 - tHero, 2.2);
+
+    sheets.forEach((s, i) => {
+      s.material.uniforms.uTime.value = tm;
+      // gentle bob
+      const d = s.userData;
+      const wob = Math.sin(tm * 0.4 + d.depth * 0.7 + i) * 0.18 * d.drift;
+      // hero dispersal is light — sheets stay as ambient backdrop throughout the page
+      const dirX = Math.sign(d.baseX || (i%2?1:-1));
+      const pushX = dirX * 1.8 * eHero;
+      const pushY = (i % 2 === 0 ? 1 : -1) * 0.9 * eHero;
+      const pushZ = -3.5 * eHero;
+      // ongoing slow scroll-linked drift across the whole page
+      const pageDrift = Math.min(2, scrollY / window.innerHeight) * 0.15;
+      s.position.x = d.baseX + pushX + Math.sin(tm * 0.2 + i) * 0.2 + pointer.x * 0.4 * (1 - d.depth*0.06);
+      s.position.y = d.baseY + wob + pushY - pageDrift * (1 - i*0.05) + pointer.y * -0.3 * (1 - d.depth*0.06);
+      s.position.z = d.baseZ + pushZ;
+      s.rotation.x = d.baseRx + Math.sin(tm * 0.3 + i) * 0.05 + pointer.y * 0.1;
+      s.rotation.y = d.baseRy + Math.cos(tm * 0.25 + i) * 0.05 + pointer.x * 0.15;
+      // dim but don't kill — sheets stay visible as ambient backdrop
+      const fadeOpacity = (1 - eHero * 0.45);
+      s.material.uniforms.uOpacity.value = (layout[i]?.opacity || 0.5) * fadeOpacity;
+    });
+
+    // 3D SOLIDS — rotate, bob, and parallax with pointer
+    solids.forEach((s, i) => {
+      const u = s.userData;
+      s.rotation.x = tm * u.spinX * 0.4;
+      s.rotation.y = tm * u.spinY * 0.4;
+      s.position.y = u.baseY + Math.sin(tm * 0.6 + u.bob) * 0.18;
+      s.position.x += pointer.x * 0.0008 * (i+1);  // subtle drift toward pointer
+    });
+
+    // 3D SEAWEED — update shader time + scroll-drift
+    kelps.forEach((k, i) => {
+      k.material.uniforms.uTime.value = tm;
+      // small parallax with pointer (whole leaf drifts)
+      k.position.x = kelpLayout[i].x + pointer.x * 0.25;
+      k.position.z = kelpLayout[i].z + pointer.y * -0.15;
+      // fade slightly as you scroll, but they remain ambient throughout
+      k.material.uniforms.uOpacity.value = kelpLayout[i].opacity * (1 - eHero * 0.35);
+    });
+
+    // CENTRAL KNOT — small accent, recedes
+    knot.rotation.x = tm * 0.18 + pointer.y * 0.4;
+    knot.rotation.y = tm * 0.24 + pointer.x * 0.5;
+    knot.position.x = pointer.x * 0.3 + Math.sin(tm * 0.2) * 0.15;
+    knot.position.y = pointer.y * -0.2 + Math.cos(tm * 0.15) * 0.1;
+    knot.position.z = -2 + Math.sin(tm * 0.18) * 0.3;
+    const knotScale = Math.max(0.15, 0.7 - eHero * 0.6);
+    knot.scale.setScalar(knotScale);
+
+    // dust drift
+    dust.rotation.y = tm * 0.02 + pointer.x * 0.05;
+    dust.rotation.x = pointer.y * 0.05;
+    dust.position.z = -2 + Math.sin(tm * 0.2) * 0.2;
+    dustMat.opacity = 0.55 * (1 - eHero * 0.4);
+
+    // camera dolly back, then continues drifting subtly with page scroll
+    const pageFactor = Math.min(1, (scrollY - heroH) / (docH - heroH + 1));
+    const pageZ = isNaN(pageFactor) ? 0 : Math.max(0, pageFactor) * 3;
+    camera.position.z = 9 + eHero * 6 + pageZ;
+    camera.position.x = pointer.x * 0.4 + Math.sin(tm * 0.1) * 0.2;
+    camera.position.y = pointer.y * -0.25 + Math.cos(tm * 0.08) * 0.15;
+    camera.lookAt(0, 0, 0);
+
+    if (renderEnabled) renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// =============================================================
+// Reveal on scroll
+// =============================================================
+(() => {
+  const els = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        en.target.classList.add('in');
+        io.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  els.forEach(el => io.observe(el));
+})();
+
+// =============================================================
+// Scroll-driven 3D for content slabs — each section tilts based
+// on its position relative to viewport center
+// =============================================================
+(() => {
+  const slabs = document.querySelectorAll('.content > section.wrap');
+  let ticking = false;
+  function update(){
+    const vh = window.innerHeight;
+    const centerY = vh / 2;
+    slabs.forEach(slab => {
+      if (slab.id === 'garden') return; // garden has its own interactive canvas — don't tilt it
+      const r = slab.getBoundingClientRect();
+      const slabCenter = r.top + r.height / 2;
+      const d = (slabCenter - centerY) / vh;
+      if (Math.abs(d) > 2.2) return;
+      const clamped = Math.max(-1, Math.min(1, d));
+      const rx = clamped * 3.5;
+      const tz = -Math.abs(clamped) * 60;
+      const ty = clamped * 18;
+      slab.style.transform = `translate3d(0, ${ty.toFixed(2)}px, ${tz.toFixed(2)}px) rotateX(${(-rx).toFixed(2)}deg)`;
+    });
+    ticking = false;
+  }
+  window.addEventListener('scroll', () => {
+    if (!ticking){ requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+})();
+
+// =============================================================
+// Card hover tilt (subtle, Apple-ish) — supports data-tilt and data-tilt-soft
+// =============================================================
+(() => {
+  function bindTilt(el, opts){
+    const max = opts.max || 4;
+    const lift = opts.lift || 0;
+    let raf = 0;
+    function onMove(e){
+      const r = el.getBoundingClientRect();
+      const mx = ((e.clientX - r.left) / r.width);
+      const my = ((e.clientY - r.top) / r.height);
+      const rx = (0.5 - my) * max;
+      const ry = (mx - 0.5) * (max + 1);
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        el.style.transform = `perspective(1200px) translateZ(${lift}px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        el.style.setProperty('--mx', (mx*100).toFixed(1) + '%');
+        el.style.setProperty('--my', (my*100).toFixed(1) + '%');
+      });
+    }
+    function onLeave(){
+      cancelAnimationFrame(raf);
+      el.style.transform = 'perspective(1200px) translateZ(0) rotateX(0) rotateY(0)';
+    }
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerleave', onLeave);
+  }
+
+  document.querySelectorAll('[data-tilt]').forEach(el => {
+    const strong = el.hasAttribute('data-tilt-strong');
+    bindTilt(el, { max: strong ? 7 : 5, lift: strong ? 14 : 6 });
+  });
+  document.querySelectorAll('[data-tilt-soft]').forEach(el => {
+    bindTilt(el, { max: 3, lift: 4 });
+  });
+
+  // PARALLAX 3D: child elements within tilt cards drift independently for depth
+  // Anything with data-parallax="<depth>" inside a tilt parent moves opposite
+  document.querySelectorAll('[data-tilt], [data-tilt-soft]').forEach(parent => {
+    const layers = parent.querySelectorAll('[data-parallax]');
+    if (!layers.length) return;
+    parent.addEventListener('pointermove', (e) => {
+      const r = parent.getBoundingClientRect();
+      const mx = ((e.clientX - r.left) / r.width) - 0.5;
+      const my = ((e.clientY - r.top) / r.height) - 0.5;
+      layers.forEach(l => {
+        const depth = parseFloat(l.getAttribute('data-parallax')) || 10;
+        l.style.transform = `translate3d(${(-mx * depth).toFixed(2)}px, ${(-my * depth).toFixed(2)}px, ${depth}px)`;
+      });
+    });
+    parent.addEventListener('pointerleave', () => {
+      layers.forEach(l => { l.style.transform = 'translate3d(0,0,0)'; });
+    });
+  });
+
+  // GLOBAL PAGE PARALLAX — the hero name shifts subtly with cursor (extra wow)
+  const heroName = document.getElementById('heroName');
+  const kanji = document.querySelector('.hero .kanji');
+  if (heroName){
+    window.addEventListener('pointermove', (e) => {
+      const mx = (e.clientX / window.innerWidth - 0.5);
+      const my = (e.clientY / window.innerHeight - 0.5);
+      // only when in hero zone
+      if (window.scrollY < window.innerHeight * 0.6){
+        // additive on top of scroll choreography — use CSS variables
+        heroName.style.setProperty('--px', (mx * 18).toFixed(2) + 'px');
+        heroName.style.setProperty('--py', (my * 10).toFixed(2) + 'px');
+        if (kanji) kanji.style.transform = `translateX(-50%) translate3d(${(mx*30).toFixed(2)}px, ${(my*14).toFixed(2)}px, 0)`;
+      }
+    });
+  }
+})();
+
+// =============================================================
+// CORNER MARK — persistent rotating 3D polyhedron, brand stamp
+// =============================================================
+(() => {
+  const mount = document.getElementById('cornerMark');
+  if (!mount || !window.THREE) return;
+  const s = new THREE.Scene();
+  const c = new THREE.PerspectiveCamera(40, 1, 0.1, 20);
+  c.position.set(0, 0, 3.2);
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  r.setSize(84, 84, false);
+  r.setClearColor(0x000000, 0);
+  mount.appendChild(r.domElement);
+  s.add(new THREE.AmbientLight(0x6db5a0, 0.7));
+  const d = new THREE.DirectionalLight(0xc6f0d8, 1.4); d.position.set(2,2,3); s.add(d);
+  const d2 = new THREE.DirectionalLight(0x9eb6ff, 0.6); d2.position.set(-2,-1,1); s.add(d2);
+  const g = new THREE.IcosahedronGeometry(0.9, 0);
+  const m = new THREE.MeshStandardMaterial({ color: 0x2a6651, metalness: 0.65, roughness: 0.25, emissive: 0x123d2f, emissiveIntensity: 0.5, flatShading: true });
+  const mesh = new THREE.Mesh(g, m);
+  s.add(mesh);
+  const wire = new THREE.LineSegments(
+    new THREE.EdgesGeometry(g),
+    new THREE.LineBasicMaterial({ color: 0xb6e8c8, transparent: true, opacity: 0.6 })
+  );
+  mesh.add(wire);
+  const cl = new THREE.Clock();
+  function loop(){
+    const t = cl.getElapsedTime();
+    mesh.rotation.x = t * 0.4;
+    mesh.rotation.y = t * 0.55;
+    r.render(s, c);
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// =============================================================
+// SCROLL SHOWCASE — Apple-style 3D object that MORPHS
+// between geometries as the user scrolls through sections
+// =============================================================
+(() => {
+  const mount = document.querySelector('#showcase .sc-canvas');
+  const lblNum = document.querySelector('#showcase .sc-lbl .num');
+  const lblNm  = document.querySelector('#showcase .sc-lbl .nm');
+  const wrap   = document.getElementById('showcase');
+  if (!mount || !window.THREE) return;
+
+  const s = new THREE.Scene();
+  const c = new THREE.PerspectiveCamera(38, 1, 0.1, 30);
+  c.position.set(0, 0, 4.5);
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  r.setSize(240, 240, false);
+  r.setClearColor(0x000000, 0);
+  mount.appendChild(r.domElement);
+  s.add(new THREE.AmbientLight(0x6db5a0, 0.7));
+  const d1 = new THREE.DirectionalLight(0xc6f0d8, 1.6); d1.position.set(3,3,4); s.add(d1);
+  const d2 = new THREE.DirectionalLight(0x9eb6ff, 0.7); d2.position.set(-3,-1,2); s.add(d2);
+  const d3 = new THREE.PointLight(0x6dc09c, 1.5, 10, 2); d3.position.set(0, 0, 3); s.add(d3);
+
+  // Geometries representing each section
+  // [section selector, label number, label name, geometry, scale, base rotation speed]
+  const showcases = [
+    { sel: '#work',     n: '01', name: 'Networks',  geo: () => new THREE.IcosahedronGeometry(1.1, 0),  scale: 1.0 },
+    { sel: '#research', n: '02', name: 'Research',  geo: () => new THREE.OctahedronGeometry(1.15, 0),  scale: 1.0 },
+    { sel: '#awards',   n: '03', name: 'Recognition', geo: () => new THREE.DodecahedronGeometry(1.05, 0), scale: 1.0 },
+    { sel: '#skills',   n: '04', name: 'Toolkit',   geo: () => new THREE.TorusGeometry(0.85, 0.28, 16, 80), scale: 1.0 },
+    { sel: '#contact',  n: '05', name: 'Connection', geo: () => new THREE.TorusKnotGeometry(0.85, 0.27, 160, 22, 2, 3), scale: 1.0 },
+  ];
+
+  // Single mesh whose geometry we swap. Use flat shading + wireframe overlay
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x1f5040, metalness: 0.55, roughness: 0.3,
+    emissive: 0x123d2f, emissiveIntensity: 0.5,
+    flatShading: true, transparent: true, opacity: 1
+  });
+  let currentGeo = showcases[0].geo();
+  const mesh = new THREE.Mesh(currentGeo, mat);
+  s.add(mesh);
+  const wireMat = new THREE.LineBasicMaterial({ color: 0x9dd9b6, transparent: true, opacity: 0.55 });
+  let wire = new THREE.LineSegments(new THREE.EdgesGeometry(currentGeo), wireMat);
+  mesh.add(wire);
+
+  function swap(geoFn){
+    const newGeo = geoFn();
+    mesh.geometry.dispose();
+    mesh.geometry = newGeo;
+    mesh.remove(wire);
+    wire.geometry.dispose();
+    wire = new THREE.LineSegments(new THREE.EdgesGeometry(newGeo), wireMat);
+    mesh.add(wire);
+  }
+
+  // Resolve section elements once
+  const sects = showcases.map(x => Object.assign({}, x, { el: document.querySelector(x.sel) }));
+  let activeIdx = -1;
+  let swapPhase = 0;          // 0..1 — fade out / fade in mid-swap
+  let pendingIdx = -1;
+  function pickActive(){
+    // pick the section closest to viewport center that's currently in view
+    const cy = window.innerHeight / 2;
+    let best = -1, bestDist = Infinity;
+    sects.forEach((x, i) => {
+      if (!x.el) return;
+      const r = x.el.getBoundingClientRect();
+      const top = r.top, bot = r.bottom;
+      const inView = top < window.innerHeight * 0.8 && bot > window.innerHeight * 0.2;
+      if (!inView) return;
+      const mid = (top + bot) / 2;
+      const dist = Math.abs(mid - cy);
+      if (dist < bestDist){ best = i; bestDist = dist; }
+    });
+    return best;
+  }
+
+  function updateActive(){
+    const idx = pickActive();
+    // toggle visibility wrapper
+    if (idx === -1){ wrap.classList.remove('on'); }
+    else            { wrap.classList.add('on'); }
+    if (idx !== activeIdx && idx !== -1){
+      // start swap animation
+      pendingIdx = idx;
+      swapPhase = 0;
+    }
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  window.addEventListener('resize', updateActive);
+  setTimeout(updateActive, 800);
+
+  // animation loop
+  const cl = new THREE.Clock();
+  let scrollOffset = 0;
+  function loop(){
+    const t = cl.getElapsedTime();
+    const scroll = window.scrollY;
+    // base rotation + scroll-linked rotation (Apple-style: object reacts to scroll)
+    mesh.rotation.x = t * 0.25 + scroll * 0.0015;
+    mesh.rotation.y = t * 0.35 + scroll * 0.002;
+    // gentle breathing scale
+    const breath = 1 + Math.sin(t * 1.2) * 0.03;
+    mesh.scale.setScalar(breath);
+
+    // handle morph transition (fade out -> swap geo -> fade in)
+    if (pendingIdx !== -1){
+      swapPhase += 0.05;
+      if (swapPhase < 1){
+        // fade out current
+        const o = 1 - swapPhase;
+        mat.opacity = o;
+        wireMat.opacity = 0.55 * o;
+        mesh.rotation.z += 0.04 * (1 - swapPhase);
+      } else {
+        // perform swap
+        activeIdx = pendingIdx;
+        pendingIdx = -1;
+        swap(sects[activeIdx].geo());
+        // update label
+        if (lblNum) lblNum.textContent = sects[activeIdx].n;
+        if (lblNm)  lblNm.textContent = sects[activeIdx].name;
+        // begin fade in
+        swapPhase = -1; // signal fade-in phase
+      }
+    } else if (swapPhase < 0){
+      // fade in phase: swapPhase goes from -1 -> 0
+      swapPhase += 0.05;
+      const o = 1 - Math.abs(swapPhase);
+      mat.opacity = o;
+      wireMat.opacity = 0.55 * o;
+      if (swapPhase >= 0){ swapPhase = 0; mat.opacity = 1; wireMat.opacity = 0.55; }
+    }
+
+    r.render(s, c);
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// =============================================================
+// GARDEN MINI-GAME — click to plant 3D kelp, cursor creates current
+// =============================================================
+(() => {
+  const container = document.getElementById('gardenCanvas');
+  const countEl = document.getElementById('gardenCount');
+  const msgEl   = document.getElementById('gardenMsg');
+  const celebEl = document.getElementById('gardenCeleb');
+  const resetBtn = document.getElementById('gardenReset');
+  if (!container || !window.THREE) return;
+
+  let W = container.clientWidth, H = container.clientHeight;
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x050a08, 0.09);
+
+  const camera = new THREE.PerspectiveCamera(42, W/H, 0.1, 60);
+  camera.position.set(0, 0.8, 9);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(W, H, false);
+  renderer.setClearColor(0x000000, 0);
+  Object.assign(renderer.domElement.style, { position: 'absolute', inset: 0, zIndex: 0 });
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0x4a7a64, 0.55));
+  const dKey = new THREE.DirectionalLight(0xc6f0d8, 1.2); dKey.position.set(2, 5, 4); scene.add(dKey);
+  const dRim = new THREE.DirectionalLight(0x9eb6ff, 0.5); dRim.position.set(-3, -1, -2); scene.add(dRim);
+  const pLight = new THREE.PointLight(0x6dc09c, 1.4, 14, 2); pLight.position.set(0, 2, 4); scene.add(pLight);
+
+  // sandy seafloor — mostly black with subtle grid
+  const floorGeo = new THREE.PlaneGeometry(30, 14);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x07140f, metalness: 0.0, roughness: 1.0, transparent: true, opacity: 0.85
+  });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -2.5;
+  scene.add(floor);
+
+  const grid = new THREE.GridHelper(20, 20, 0x2a6651, 0x12382c);
+  grid.position.y = -2.49;
+  grid.material.transparent = true;
+  grid.material.opacity = 0.18;
+  scene.add(grid);
+
+  // ambient drifting particles
+  const partN = 24;
+  const partGeo = new THREE.BufferGeometry();
+  const partPos = new Float32Array(partN * 3);
+  for (let i = 0; i < partN; i++){
+    partPos[i*3]   = (Math.random() - 0.5) * 22;
+    partPos[i*3+1] = (Math.random() - 0.3) * 5;
+    partPos[i*3+2] = (Math.random() - 0.5) * 6;
+  }
+  partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+  const partMat = new THREE.PointsMaterial({ color: 0xa8e0c2, size: 0.04, transparent: true, opacity: 0.5, depthWrite: false });
+  const particles = new THREE.Points(partGeo, partMat);
+  scene.add(particles);
+
+  // KELP SHADER (with pointer-driven current bias)
+  const kelpVert = `
+    uniform float uTime;
+    uniform float uSeed;
+    uniform float uH;
+    uniform vec3  uPointer;
+    uniform float uPointerStrength;
+    varying vec2 vUv;
+    varying float vBend;
+    void main(){
+      vUv = uv;
+      vec3 p = position;
+      float h = clamp((p.y / uH) + 0.5, 0.0, 1.0);
+      float t = uTime * 0.6 + uSeed;
+      float bendCurve = h * h;
+      float swayX = sin(t + h * 2.3) * 0.85 * bendCurve;
+      float swayZ = cos(t * 0.7 + h * 1.7) * 0.55 * bendCurve;
+      swayX += uPointer.x * uPointerStrength * 1.6 * bendCurve;
+      swayZ += uPointer.z * uPointerStrength * 1.4 * bendCurve;
+      p.x += swayX;
+      p.z += swayZ;
+      vBend = swayX;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }
+  `;
+  const kelpFrag = `
+    precision mediump float;
+    uniform vec3 uColor; uniform vec3 uHi; uniform float uOpacity;
+    varying vec2 vUv; varying float vBend;
+    void main(){
+      float xDist = abs(vUv.x - 0.5);
+      float taper = 1.0 - smoothstep(0.7, 1.0, vUv.y);
+      float edge = 1.0 - smoothstep(0.38 * taper, 0.5 * taper, xDist);
+      if (edge < 0.02) discard;
+      float bendN = vBend * 0.5 + 0.5;
+      vec3 col = mix(uColor, uHi, bendN * 0.32);
+      float rib = 1.0 - smoothstep(0.0, 0.03, xDist);
+      col = mix(col, uHi * 0.7, rib * 0.4);
+      gl_FragColor = vec4(col, uOpacity * edge);
+    }
+  `;
+
+  const kelps = [];
+  const palettes = [
+    { c: 0x0c2018, h: 0x5fa885 },
+    { c: 0x123028, h: 0x6dc09c },
+    { c: 0x174336, h: 0x7fd0ad },
+    { c: 0x215a48, h: 0x90dbb8 },
+    { c: 0x0e2620, h: 0x4c8a72 },
+  ];
+
+  function plantKelp(x, z){
+    const pal = palettes[Math.floor(Math.random() * palettes.length)];
+    const leafW = 0.55 + Math.random() * 0.45;
+    const fullH = 2.2 + Math.random() * 2.4;
+    const geo = new THREE.PlaneGeometry(leafW, fullH, 2, 12);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uSeed: { value: Math.random() * 10 },
+        uH:    { value: fullH },
+        uColor:{ value: new THREE.Color(pal.c) },
+        uHi:   { value: new THREE.Color(pal.h) },
+        uOpacity:{ value: 0.92 },
+        uPointer: { value: new THREE.Vector3() },
+        uPointerStrength: { value: 0 }
+      },
+      vertexShader: kelpVert,
+      fragmentShader: kelpFrag,
+      transparent: true, side: THREE.DoubleSide, depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    // Wrap in a group anchored at the floor so scale.y grows the kelp upward from the seabed
+    const group = new THREE.Group();
+    group.position.set(x, -2.5, z);
+    group.rotation.y = Math.random() * Math.PI * 2;
+    mesh.position.y = fullH / 2; // local: leaf center sits half a height above floor
+    group.add(mesh);
+    group.scale.y = 0.01;
+    group.userData = { growProgress: 0, fullH, mesh };
+    scene.add(group);
+    kelps.push(group);
+    spawnBurst(x, -2.5, z, pal.h);
+    updateHud();
+  }
+
+  // particle burst (planting feedback)
+  const bursts = [];
+  function spawnBurst(x, y, z, color){
+    const n = 14;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(n * 3);
+    const vel = [];
+    for (let i = 0; i < n; i++){
+      pos[i*3]   = x;
+      pos[i*3+1] = y + 0.1;
+      pos[i*3+2] = z;
+      const a = Math.random() * Math.PI * 2;
+      const s = 0.4 + Math.random() * 0.8;
+      vel.push([Math.cos(a)*s*0.6, 0.4 + Math.random()*1.4, Math.sin(a)*s*0.6]);
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color, size: 0.09, transparent: true, opacity: 1, depthWrite: false });
+    const pts = new THREE.Points(geo, mat);
+    pts.userData = { vel, life: 1 };
+    scene.add(pts);
+    bursts.push(pts);
+  }
+
+  // pointer + click
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 2.5);
+  const pointerWorld = new THREE.Vector3();
+  let pointerStrength = 0;
+  let suppressClick = false;
+
+  function getPointer(e){
+    const r = container.getBoundingClientRect();
+    mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    mouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const pt = new THREE.Vector3();
+    raycaster.ray.intersectPlane(floorPlane, pt);
+    return pt;
+  }
+
+  container.addEventListener('click', (e) => {
+    if (suppressClick) { suppressClick = false; return; }
+    if (e.target.tagName === 'BUTTON') return;
+    const pt = getPointer(e);
+    if (!pt) return;
+    // clamp inside playable area
+    pt.x = Math.max(-8, Math.min(8, pt.x));
+    pt.z = Math.max(-3, Math.min(3, pt.z));
+    plantKelp(pt.x, pt.z);
+  });
+  container.addEventListener('pointermove', (e) => {
+    const pt = getPointer(e);
+    if (pt) pointerWorld.copy(pt);
+    pointerStrength = 1;
+  });
+  container.addEventListener('pointerleave', () => { pointerStrength = 0; });
+
+  // HUD
+  const messages = [
+    'click anywhere on the seabed to plant nori.',
+    'good start. keep planting.',
+    'a small patch is forming.',
+    'a forest is taking shape.',
+    'almost there.',
+  ];
+  let celebrated = false;
+  function updateHud(){
+    const c = kelps.length;
+    if (countEl) countEl.textContent = c;
+    if (msgEl){
+      const idx = Math.min(messages.length - 1, Math.floor(c / 3));
+      if (c >= 12){
+        msgEl.innerHTML = '<span class="ja">森ができた</span>your garden is grown. plant more if you like.';
+        msgEl.classList.add('done');
+        if (!celebrated && celebEl){
+          celebrated = true;
+          celebEl.classList.add('show');
+          setTimeout(() => celebEl.classList.remove('show'), 3200);
+          // bloom burst at center
+          for (let i = 0; i < 5; i++){
+            const ang = (i / 5) * Math.PI * 2;
+            spawnBurst(Math.cos(ang)*2, -2.4, Math.sin(ang)*1.5, 0xb6e8c8);
+          }
+        }
+      } else {
+        msgEl.textContent = messages[idx];
+        msgEl.classList.remove('done');
+      }
+    }
+  }
+  updateHud();
+
+  resetBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 100);
+    kelps.forEach(g => {
+      scene.remove(g);
+      if (g.userData.mesh){
+        g.userData.mesh.geometry.dispose();
+        g.userData.mesh.material.dispose();
+      }
+    });
+    kelps.length = 0;
+    celebrated = false;
+    if (celebEl) celebEl.classList.remove('show');
+    if (msgEl) msgEl.classList.remove('done');
+    updateHud();
+  });
+
+  // resize
+  function onResize(){
+    W = container.clientWidth; H = container.clientHeight;
+    camera.aspect = W/H; camera.updateProjectionMatrix();
+    renderer.setSize(W, H, false);
+  }
+  window.addEventListener('resize', onResize);
+
+  // only render when section visible
+  let visible = false;
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => visible = e.isIntersecting);
+  }, { threshold: 0.05 });
+  io.observe(container);
+
+  const clock = new THREE.Clock();
+  let frameCount = 0;
+  function loop(){
+    const t = clock.getElapsedTime();
+    frameCount++;
+
+    if (visible){
+      // animate kelps (groups containing meshes)
+      kelps.forEach(g => {
+        if (g.userData.growProgress < 1){
+          g.userData.growProgress += 0.025;
+          const p = Math.min(1, g.userData.growProgress);
+          const eased = 1 - Math.pow(1 - p, 3);
+          g.scale.y = 0.01 + eased * 0.99;
+        }
+        const u = g.userData.mesh.material.uniforms;
+        u.uTime.value = t;
+        // current bias: bend toward pointer when nearby
+        if (pointerStrength > 0){
+          const dx = pointerWorld.x - g.position.x;
+          const dz = pointerWorld.z - g.position.z;
+          const dist = Math.sqrt(dx*dx + dz*dz);
+          const strength = Math.max(0, 1 - dist / 6) * pointerStrength;
+          u.uPointerStrength.value += (strength - u.uPointerStrength.value) * 0.08;
+          const len = Math.max(0.001, dist);
+          u.uPointer.value.set(dx/len, 0, dz/len);
+        } else {
+          u.uPointerStrength.value += (0 - u.uPointerStrength.value) * 0.08;
+        }
+      });
+
+      // drift particles — update every 3rd frame to save CPU→GPU upload cost
+      if (frameCount % 3 === 0){
+        const ppos = particles.geometry.attributes.position.array;
+        for (let i = 0; i < partN; i++){
+          ppos[i*3+1] += 0.018;
+          if (ppos[i*3+1] > 3){ ppos[i*3+1] = -2.5; ppos[i*3] = (Math.random() - 0.5) * 22; }
+        }
+        particles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // burst lifecycles
+      for (let i = bursts.length - 1; i >= 0; i--){
+        const b = bursts[i];
+        b.userData.life -= 0.022;
+        const arr = b.geometry.attributes.position.array;
+        const vels = b.userData.vel;
+        for (let j = 0; j < vels.length; j++){
+          arr[j*3]   += vels[j][0] * 0.025;
+          arr[j*3+1] += vels[j][1] * 0.025;
+          arr[j*3+2] += vels[j][2] * 0.025;
+          vels[j][1] *= 0.96;
+        }
+        b.geometry.attributes.position.needsUpdate = true;
+        b.material.opacity = Math.max(0, b.userData.life);
+        if (b.userData.life <= 0){
+          scene.remove(b); b.geometry.dispose(); b.material.dispose();
+          bursts.splice(i, 1);
+        }
+      }
+
+      // subtle camera drift with pointer
+      camera.position.x += ((pointerWorld.x * 0.08) - camera.position.x) * 0.03;
+      camera.position.y += ((0.8 + pointerWorld.z * 0.04) - camera.position.y) * 0.03;
+      camera.lookAt(0, -0.5, 0);
+
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// =============================================================
+// Smooth anchor scroll
+// =============================================================
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', (e) => {
+    const id = a.getAttribute('href');
+    if (id && id.length > 1) {
+      const el = document.querySelector(id);
+      if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    }
+  });
+});
+</script>
+
+<!-- React + Tweaks panel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<div id="tweaks-root"></div>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "palette": ["#5fa885","#14302a","#f4f1ea"],
+  "accentHue": 152,
+  "noriIntensity": 1,
+  "showPingu": false
+}/*EDITMODE-END*/;
+
+function ApplyTweaks(){
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('--accent', `oklch(0.78 0.13 ${t.accentHue})`);
+  }, [t.accentHue]);
+
+  React.useEffect(() => {
+    // pingu easter egg: a tiny silhouette in the corner
+    let n = document.getElementById('pingu');
+    if (t.showPingu){
+      if (!n){
+        n = document.createElement('div');
+        n.id = 'pingu';
+        n.innerHTML = `<svg viewBox="0 0 64 80" width="56" height="70" aria-hidden="true">
+          <ellipse cx="32" cy="42" rx="22" ry="30" fill="#0d1411" stroke="#1f3a31" stroke-width="1"/>
+          <ellipse cx="32" cy="50" rx="14" ry="22" fill="#f4f1ea"/>
+          <circle cx="24" cy="30" r="3" fill="#f4f1ea"/>
+          <circle cx="40" cy="30" r="3" fill="#f4f1ea"/>
+          <circle cx="24" cy="30" r="1.4" fill="#0d1411"/>
+          <circle cx="40" cy="30" r="1.4" fill="#0d1411"/>
+          <path d="M28 36 Q32 40 36 36 L36 40 Q32 43 28 40 Z" fill="#d9a657"/>
+          <ellipse cx="20" cy="70" rx="6" ry="2.4" fill="#d9a657"/>
+          <ellipse cx="44" cy="70" rx="6" ry="2.4" fill="#d9a657"/>
+        </svg>`;
+        Object.assign(n.style, {
+          position:'fixed', left:'24px', bottom:'70px', zIndex:'90',
+          opacity:'.85', filter:'drop-shadow(0 6px 14px rgba(0,0,0,.5))',
+          animation: 'pingu-bob 3.4s ease-in-out infinite'
+        });
+        const style = document.createElement('style');
+        style.textContent = `@keyframes pingu-bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}`;
+        document.head.appendChild(style);
+        document.body.appendChild(n);
+      }
+    } else if (n){ n.remove(); }
+  }, [t.showPingu]);
+
+  return (
+    <TweaksPanel>
+      <TweakSection label="Accent" />
+      <TweakColor label="Accent hue" value={`oklch(0.78 0.13 ${t.accentHue})`}
+        options={[
+          `oklch(0.78 0.13 152)`,
+          `oklch(0.78 0.13 75)`,
+          `oklch(0.78 0.13 250)`,
+          `oklch(0.78 0.13 20)`,
+        ]}
+        onChange={(v) => {
+          const m = v.match(/(\d+(?:\.\d+)?)\)/);
+          if (m) setTweak('accentHue', parseFloat(m[1]));
+        }} />
+      <TweakSection label="Easter egg" />
+      <TweakToggle label="Pingu friend" value={t.showPingu} onChange={(v) => setTweak('showPingu', v)} />
+    </TweaksPanel>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('tweaks-root'));
+root.render(<ApplyTweaks />);
+</script>
+
+</body>
+</html>
