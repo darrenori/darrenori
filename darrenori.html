@@ -718,7 +718,6 @@
           <p>Published with IEEE — a study of how FHE behaves when you throw NVIDIA’s CUDA parallelism at it. Implemented and benchmarked on NVIDIA Jetson Nano devices, comparing public/private key generation, security-bits, default generated key size, and transmission latency. Achieved up to a 95% reduction in computation latency.</p>
           <h4>Google Air-Gapped Distributed Cloud</h4>
           <p>Researched Google’s Air-Gapped GDC, focused on sovereign-cloud requirements, security isolation, AI governance and data-residency constraints, and the trade-offs between connected and air-gapped deployments.</p>
-          <p>Conducted on-site interviews with <em>Andy Lee</em> (Head, Google Cloud Public Sector) and <em>Shang Jiunn Chuah</em> (Customer Engineer, Google Cloud).</p>
         </div>
       </div>
     </section>
@@ -1664,8 +1663,8 @@
   camera.position.set(0, 0.8, 9);
   camera.lookAt(0, 0, 0);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
-  renderer.setPixelRatio(1);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setSize(W, H, false);
   renderer.setClearColor(0x000000, 0);
   Object.assign(renderer.domElement.style, { position: 'absolute', inset: 0, zIndex: 0 });
@@ -1715,14 +1714,19 @@
     uniform float uPointerStrength;
     varying vec2 vUv;
     varying float vBend;
+    varying float vHeight;
     void main(){
       vUv = uv;
       vec3 p = position;
       float h = clamp((p.y / uH) + 0.5, 0.0, 1.0);
+      vHeight = h;
       float t = uTime * 0.6 + uSeed;
       float bendCurve = h * h;
       float swayX = sin(t + h * 2.3) * 0.85 * bendCurve;
       float swayZ = cos(t * 0.7 + h * 1.7) * 0.55 * bendCurve;
+      // secondary high-freq ripple along the blade
+      float ripple = sin(t * 2.1 + h * 6.0 + uSeed * 1.3) * 0.10 * h;
+      swayX += ripple;
       swayX += uPointer.x * uPointerStrength * 0.9 * bendCurve;
       swayZ += uPointer.z * uPointerStrength * 0.8 * bendCurve;
       p.x += swayX;
@@ -1732,18 +1736,33 @@
     }
   `;
   const kelpFrag = `
-    precision mediump float;
+    precision highp float;
     uniform vec3 uColor; uniform vec3 uHi; uniform float uOpacity;
-    varying vec2 vUv; varying float vBend;
+    uniform float uSeed;
+    varying vec2 vUv; varying float vBend; varying float vHeight;
     void main(){
       float xDist = abs(vUv.x - 0.5);
-      float taper = 1.0 - smoothstep(0.7, 1.0, vUv.y);
-      float edge = 1.0 - smoothstep(0.38 * taper, 0.5 * taper, xDist);
-      if (edge < 0.02) discard;
+      // tapered blade shape — wider at mid, narrow at tip
+      float taper = 1.0 - smoothstep(0.62, 1.0, vUv.y);
+      float edgeHard = 0.5 * taper;
+      float edgeSoft = edgeHard * 0.72;
+      float edge = 1.0 - smoothstep(edgeSoft, edgeHard, xDist);
+      if (edge < 0.015) discard;
+      // height-based gradient: dark at base, bright/saturated toward tip
+      float heightFade = pow(vHeight, 0.6);
+      vec3 col = mix(uColor * 0.7, uHi, heightFade * 0.6);
+      // bend-shading: lit face gets a warm highlight
       float bendN = vBend * 0.5 + 0.5;
-      vec3 col = mix(uColor, uHi, bendN * 0.32);
-      float rib = 1.0 - smoothstep(0.0, 0.03, xDist);
-      col = mix(col, uHi * 0.7, rib * 0.4);
+      col = mix(col, uHi, bendN * 0.25);
+      // centre midrib vein — bright streak
+      float midrib = 1.0 - smoothstep(0.0, 0.045, xDist);
+      col = mix(col, uHi * 1.15, midrib * 0.55);
+      // horizontal cell striations
+      float stria = sin(vUv.y * 32.0 + uSeed * 2.7) * 0.5 + 0.5;
+      col += uHi * stria * 0.035;
+      // rim translucency glow (subsurface scatter approximation)
+      float rim = smoothstep(0.28 * taper, 0.5 * taper, xDist);
+      col = mix(col, uHi * 0.9, rim * 0.22);
       gl_FragColor = vec4(col, uOpacity * edge);
     }
   `;
@@ -1761,7 +1780,7 @@
     const pal = palettes[Math.floor(Math.random() * palettes.length)];
     const leafW = 0.55 + Math.random() * 0.45;
     const fullH = 2.2 + Math.random() * 2.4;
-    const geo = new THREE.PlaneGeometry(leafW, fullH, 2, 12);
+    const geo = new THREE.PlaneGeometry(leafW, fullH, 4, 28);
     const mat = new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
