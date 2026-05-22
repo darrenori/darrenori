@@ -122,7 +122,7 @@
   /* WRAP — content as floating glass slabs over the persistent 3D scene */
   .content {
     position: relative;
-    background: rgba(7, 12, 9, 0.55);
+    background: rgba(7, 12, 9, 0.92);
     perspective: 2400px;
     perspective-origin: 50% 50%;
     z-index: 3;
@@ -471,22 +471,62 @@
   }
   @keyframes fillBar{ to{ width:100%; } }
 
-  /* responsive */
+  /* ── RESPONSIVE ─────────────────────────────────────── */
   @media (max-width: 880px){
-    .intro .row{ grid-template-columns: 1fr; gap: 40px; }
-    .research .layout{ grid-template-columns: 1fr; gap: 30px;}
-    .duo{ grid-template-columns: 1fr; gap: 50px;}
-    .awards .grid{ grid-template-columns: 1fr; }
-    .award:nth-child(odd){ border-right:none; padding-right:0;}
-    .award:nth-child(even){ padding-left:0;}
-    .card{ grid-template-columns: 1fr; gap: 16px; padding: 28px 24px; }
-    .card .badge{ justify-self:start; }
+    /* nav */
     nav.top .links{ display:none; }
-    .wrap{ padding: 0 22px; }
-    .intro, .work, .research, .awards, .duo, .contact { padding-left: 22px; padding-right: 22px; }
-    .award .desc{ text-align:left;}
-    .award{ grid-template-columns: 30px 1fr; }
-    .award .desc{ grid-column: 2; }
+    nav.top{ padding: 14px 18px; }
+    nav.top .avail{ font-size: 9px; gap: 6px; }
+
+    /* sections — tighter margins and fixed vertical padding */
+    .content > section.wrap{ margin: 12px auto; border-radius: 22px; }
+    .wrap{ padding: 0 18px; }
+    .intro  { padding: 44px 18px 36px; }
+    .work   { padding: 36px 18px 36px; }
+    .research{ padding: 36px 18px 36px; }
+    .awards { padding: 36px 18px 36px; }
+    .duo    { padding: 36px 18px 36px; grid-template-columns: 1fr; gap: 36px; }
+    .garden { padding: 32px 18px 32px; }
+    .contact{ padding: 44px 18px 36px; }
+
+    /* section headers — stack num/title + sub */
+    .sec-head{ flex-direction: column; gap: 6px; padding-bottom: 20px; margin-bottom: 32px; }
+    .sec-head .sub{ text-align: left; }
+
+    /* intro */
+    .intro .row{ grid-template-columns: 1fr; gap: 32px; }
+    .intro p.lead{ font-size: clamp(24px, 7vw, 36px); max-width: 100%; }
+
+    /* work cards */
+    .card{ grid-template-columns: 1fr; gap: 14px; padding: 24px 20px; }
+    .card .badge{ justify-self: start; }
+    .card h3{ font-size: clamp(22px, 5.5vw, 30px); }
+
+    /* research */
+    .research .layout{ grid-template-columns: 1fr; gap: 28px; }
+    .research .quote{ font-size: clamp(28px, 7vw, 44px); }
+    .research .stat-row{ gap: 24px; }
+    .research .stat .n{ font-size: 40px; }
+
+    /* awards */
+    .awards .grid{ grid-template-columns: 1fr; }
+    .award{ grid-template-columns: 30px 1fr; gap: 16px; }
+    .award:nth-child(odd){ border-right: none; padding-right: 0; }
+    .award:nth-child(even){ padding-left: 0; }
+    .award .desc{ grid-column: 2; text-align: left; }
+    .award h4{ font-size: 22px; }
+
+    /* skills + edu */
+    .skills h3, .edu h3{ font-size: 28px; }
+
+    /* contact */
+    .contact .big{ font-size: clamp(40px, 12vw, 80px); }
+    .contact .links{ gap: 20px; margin-top: 36px; flex-direction: column; }
+
+    /* corner mark — hide on mobile to avoid text overlap */
+    #cornerMark{ display: none; }
+
+    /* scroll showcase — already hidden via 1180px rule, keep */
   }
 </style>
 </head>
