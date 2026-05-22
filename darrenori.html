@@ -430,6 +430,47 @@
     transition: width .08s linear;
   }
 
+  /* LOADING SCREEN */
+  #loader{
+    position:fixed; inset:0; z-index:999;
+    background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:28px;
+    transition: opacity .7s cubic-bezier(.4,0,.2,1);
+  }
+  #loader.out{ opacity:0; pointer-events:none; }
+
+  #loader .ld-mark svg path{
+    stroke-dasharray: 40;
+    stroke-dashoffset: 40;
+    animation: drawStroke .55s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  #loader .ld-mark svg path:nth-child(2){ animation-delay:.12s; }
+  #loader .ld-mark svg path:nth-child(3){ animation-delay:.24s; }
+  @keyframes drawStroke{ to{ stroke-dashoffset: 0; } }
+
+  #loader .ld-name{
+    font-family:var(--serif); font-style:italic; font-size: clamp(28px, 6vw, 52px);
+    letter-spacing:-.02em; color:var(--ink);
+    opacity:0; transform:translateY(10px);
+    animation: fadeUp .55s cubic-bezier(.2,.7,.2,1) .4s forwards;
+  }
+  #loader .ld-sub{
+    font-family:var(--mono); font-size:10px; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--ink-3);
+    opacity:0;
+    animation: fadeUp .4s cubic-bezier(.2,.7,.2,1) .62s forwards;
+  }
+  @keyframes fadeUp{ to{ opacity:1; transform:translateY(0); } }
+
+  #loader .ld-bar{
+    position:absolute; bottom:0; left:0; height:1px;
+    background:var(--accent); box-shadow:0 0 8px var(--accent);
+    width:0%;
+    animation: fillBar .9s cubic-bezier(.4,0,.2,1) .7s forwards;
+  }
+  @keyframes fillBar{ to{ width:100%; } }
+
   /* responsive */
   @media (max-width: 880px){
     .intro .row{ grid-template-columns: 1fr; gap: 40px; }
@@ -450,6 +491,19 @@
 </style>
 </head>
 <body>
+
+<div id="loader" aria-hidden="true">
+  <div class="ld-mark">
+    <svg viewBox="0 0 32 32" width="48" height="48" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round">
+      <path d="M3 11 Q9 7 16 11 T29 11" />
+      <path d="M3 16 Q9 12 16 16 T29 16" />
+      <path d="M3 21 Q9 17 16 21 T29 21" />
+    </svg>
+  </div>
+  <div class="ld-name">darren<span style="color:var(--accent)">·</span>nori</div>
+  <div class="ld-sub">海苔 &nbsp;·&nbsp; loading</div>
+  <div class="ld-bar"></div>
+</div>
 
 <div id="progress"></div>
 
@@ -801,6 +855,19 @@
 <!-- Three.js -->
 <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <script>
+// =============================================================
+// Loading screen dismiss
+// =============================================================
+(() => {
+  const loader = document.getElementById('loader');
+  if (!loader) return;
+  // Dismiss after bar animation finishes (0.7s delay + 0.9s fill + 0.1s buffer)
+  setTimeout(() => {
+    loader.classList.add('out');
+    loader.addEventListener('transitionend', () => loader.remove(), { once: true });
+  }, 1800);
+})();
+
 // =============================================================
 // 3D Hero — translucent "nori" sheets drifting in deep space
 // =============================================================
@@ -1616,8 +1683,8 @@
       float bendCurve = h * h;
       float swayX = sin(t + h * 2.3) * 0.85 * bendCurve;
       float swayZ = cos(t * 0.7 + h * 1.7) * 0.55 * bendCurve;
-      swayX += uPointer.x * uPointerStrength * 1.6 * bendCurve;
-      swayZ += uPointer.z * uPointerStrength * 1.4 * bendCurve;
+      swayX += uPointer.x * uPointerStrength * 0.9 * bendCurve;
+      swayZ += uPointer.z * uPointerStrength * 0.8 * bendCurve;
       p.x += swayX;
       p.z += swayZ;
       vBend = swayX;
@@ -1712,7 +1779,9 @@
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 2.5);
-  const pointerWorld = new THREE.Vector3();
+  const _hitPt = new THREE.Vector3(); // reusable — avoids GC pressure
+  // Start far off-scene so kelp doesn't snap on first hover
+  const pointerWorld = new THREE.Vector3(999, 0, 999);
   let pointerStrength = 0;
   let suppressClick = false;
 
@@ -1721,9 +1790,8 @@
     mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
     mouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    const pt = new THREE.Vector3();
-    raycaster.ray.intersectPlane(floorPlane, pt);
-    return pt;
+    // intersectPlane returns null when ray is parallel / misses — must check
+    return raycaster.ray.intersectPlane(floorPlane, _hitPt) ? _hitPt : null;
   }
 
   container.addEventListener('click', (e) => {
@@ -1731,14 +1799,19 @@
     if (e.target.tagName === 'BUTTON') return;
     const pt = getPointer(e);
     if (!pt) return;
-    // clamp inside playable area
     pt.x = Math.max(-8, Math.min(8, pt.x));
     pt.z = Math.max(-3, Math.min(3, pt.z));
     plantKelp(pt.x, pt.z);
   });
   container.addEventListener('pointermove', (e) => {
     const pt = getPointer(e);
-    if (pt) pointerWorld.copy(pt);
+    // Only update world position + strength when we have a valid floor hit
+    if (!pt) return;
+    pointerWorld.set(
+      Math.max(-9, Math.min(9, pt.x)),
+      0,
+      Math.max(-4, Math.min(4, pt.z))
+    );
     pointerStrength = 1;
   });
   container.addEventListener('pointerleave', () => { pointerStrength = 0; });
@@ -1834,11 +1907,11 @@
           const dz = pointerWorld.z - g.position.z;
           const dist = Math.sqrt(dx*dx + dz*dz);
           const strength = Math.max(0, 1 - dist / 6) * pointerStrength;
-          u.uPointerStrength.value += (strength - u.uPointerStrength.value) * 0.08;
+          u.uPointerStrength.value += (strength - u.uPointerStrength.value) * 0.12;
           const len = Math.max(0.001, dist);
           u.uPointer.value.set(dx/len, 0, dz/len);
         } else {
-          u.uPointerStrength.value += (0 - u.uPointerStrength.value) * 0.08;
+          u.uPointerStrength.value += (0 - u.uPointerStrength.value) * 0.12;
         }
       });
 
@@ -1872,9 +1945,6 @@
         }
       }
 
-      // subtle camera drift with pointer
-      camera.position.x += ((pointerWorld.x * 0.08) - camera.position.x) * 0.03;
-      camera.position.y += ((0.8 + pointerWorld.z * 0.04) - camera.position.y) * 0.03;
       camera.lookAt(0, -0.5, 0);
 
       renderer.render(scene, camera);
