@@ -1,7 +1,7 @@
 # darrenori
 
 **DevOps & Infrastructure.** Cloud, containers, and the plumbing that keeps things running.
-Networking-first (CCNA), infrastructure-as-code by habit, with a security background from teaching cybersecurity to 14,000+ secondary school students.
+Networking-first, infrastructure-as-code by habit, with a security background from teaching cybersecurity to 14,000+ secondary school students.
 
 ---
 
@@ -10,7 +10,7 @@ Networking-first (CCNA), infrastructure-as-code by habit, with a security backgr
 ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonwebservices&logoColor=white)
 ![Google Cloud](https://img.shields.io/badge/GCP-4285F4?style=flat&logo=googlecloud&logoColor=white)
 ![DigitalOcean](https://img.shields.io/badge/DigitalOcean-0080FF?style=flat&logo=digitalocean&logoColor=white)
-![Cisco](https://img.shields.io/badge/Networking%20(CCNA)-1BA0D7?style=flat&logo=cisco&logoColor=white)
+![Networking](https://img.shields.io/badge/Networking-1BA0D7?style=flat&logo=cisco&logoColor=white)
 ![VMware](https://img.shields.io/badge/VMware-607078?style=flat&logo=vmware&logoColor=white)
 ![Hyper-V](https://img.shields.io/badge/Hyper--V-0078D6?style=flat&logo=windows&logoColor=white)
 ![Active Directory](https://img.shields.io/badge/Active%20Directory-5E5E5E?style=flat&logo=microsoft&logoColor=white)
@@ -43,5 +43,3 @@ Networking-first (CCNA), infrastructure-as-code by habit, with a security backgr
 - Homelabbing across VMware / Hyper-V, and automating the boring parts with Terraform + Ansible
 
 📫 **darrennorii@gmail.com**
-
-<img src="https://github-readme-stats.vercel.app/api?username=darrenori&show_icons=true&hide_border=true&count_private=true&hide=stars" alt="darrenori's GitHub stats" height="150" />
