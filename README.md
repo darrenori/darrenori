@@ -41,5 +41,7 @@ I started from my basics through networking, then moved on to infrastructure-as-
 
 - Running the infra behind **CampusDash**, a campus delivery platform (Vercel + DigitalOcean, Postgres, web push)
 - Homelabbing across VMware / Hyper-V, and automating the boring parts with Terraform + Ansible
+- Working as a security researcher
+- Volunteering as DevOps on the side
 
 📫 **darrennorii@gmail.com**
