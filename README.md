@@ -1,7 +1,7 @@
 # darrenori
 
-**DevOps & Infrastructure.** Cloud, containers, and the plumbing that keeps things running.
-Networking-first, infrastructure-as-code by habit, with a security background from teaching cybersecurity to 14,000+ secondary school students.
+**DevOps, Networking, & Infrastructure.** Cloud, containers, and any form of networking (though a majority can't be displayed publicly in Github).
+I started from my basics through networking, then moved on to infrastructure-as-code by chance, and I am experienced with a security background.
 
 ---
 
